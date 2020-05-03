@@ -49,6 +49,23 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
     chunk->count++;
 }
 
+void writeConstant(Chunk* chunk, Value value, int line) {
+    // Add value to chunks constant array and write the proper
+    // instruction to load the constant
+    int idx = addConstant(chunk, value);
+    if (idx < 256) {
+        writeChunk(chunk, OP_CONSTANT, line);
+        uint8_t constant = idx;
+        writeChunk(chunk, constant, line);
+    } else {
+        writeChunk(chunk, OP_CONSTANT_LONG, line);
+        // Store bytes in big endian order
+        writeChunk(chunk, (uint8_t)(idx >> 16), line);
+        writeChunk(chunk, (uint8_t)(idx >> 8), line);
+        writeChunk(chunk, (uint8_t)(idx), line);
+    }
+}
+
 int addConstant(Chunk* chunk, Value value) {
     writeValueArray(&chunk->constants, value);
     return chunk->constants.count - 1;
