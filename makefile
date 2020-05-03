@@ -1,10 +1,10 @@
 CC     = gcc
 CFLAGS = -Wall -g -c
 
-all: main.o chunk.o debug.o memory.o value.o
-	$(CC) main.o chunk.o debug.o memory.o value.o -o nqq
+all: main.o chunk.o debug.o memory.o value.o vm.o
+	$(CC) main.o chunk.o debug.o memory.o value.o vm.o -o nqq
 
-main.o: main.c common.h chunk.h debug.h
+main.o: main.c common.h chunk.h debug.h vm.h
 	$(CC) main.c $(CFLAGS) -o main.o
 
 chunk.o: chunk.c chunk.h common.h memory.h value.h
@@ -19,5 +19,8 @@ memory.o: memory.c memory.h common.h
 value.o: value.c value.h memory.h common.h
 	$(CC) value.c $(CFLAGS) -o value.o
 
+vm.o: vm.c vm.h chunk.h common.h debug.h value.h
+	$(CC) vm.c $(CFLAGS) -o vm.o
+
 clean:
-	@rm -f nqq main.o chunk.o debug.o memory.o value.o
+	@rm -f nqq main.o chunk.o debug.o memory.o value.o vm.o
