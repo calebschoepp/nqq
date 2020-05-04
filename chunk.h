@@ -4,6 +4,7 @@
 #include "common.h"
 #include "value.h"
 
+// TODO consider making OP_CONSTANT_LONG only have two byte operand
 typedef enum {
     OP_CONSTANT,
     OP_CONSTANT_LONG,
