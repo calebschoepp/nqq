@@ -1,0 +1,132 @@
+[
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "main.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "main.o"
+  ],
+  "file": "main.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "chunk.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "chunk.o"
+  ],
+  "file": "chunk.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "debug.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "debug.o"
+  ],
+  "file": "debug.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "memory.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "memory.o"
+  ],
+  "file": "memory.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "value.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "value.o"
+  ],
+  "file": "value.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "vm.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "vm.o"
+  ],
+  "file": "vm.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "compiler.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "compiler.o"
+  ],
+  "file": "compiler.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "scanner.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "scanner.o"
+  ],
+  "file": "scanner.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "object.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "object.o"
+  ],
+  "file": "object.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "table.c",
+   "-Wall",
+   "-g",
+   "-c",
+   "-o",
+   "table.o"
+  ],
+  "file": "table.c"
+ }
+]
