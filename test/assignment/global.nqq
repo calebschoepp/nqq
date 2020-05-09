@@ -1,0 +1,17 @@
+var a = "before";
+print a;
+
+a = "after";
+print a;
+
+a = 1;
+print a;
+
+print a = 2;
+
+/* === START OUTPUT ===
+before
+after
+1
+2
+=== END OUTPUT === */
