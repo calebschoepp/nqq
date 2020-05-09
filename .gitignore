@@ -54,3 +54,4 @@ dkms.conf
 # Project specific
 nqq
 .vscode
+.idea
