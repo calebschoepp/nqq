@@ -1,6 +1,0 @@
-var a = "a";
-(a) = "value";
-
-/* === START OUTPUT ===
-<RUNTIME ERROR>
-=== STOP OUTPUT === */

@@ -16,11 +16,9 @@ def test(root_dir):
     print(f"{round(total_time, 3)} s")
 
 def test_file(filepath):
-    print(filepath)
+    print(filepath) # TODO remove
     expected_output = parse_test_file(filepath)
     actual_output = run_test_file(filepath)
-    print("expect: ", expected_output)
-    print("actual: ", actual_output)
     assert diff_outputs(expected_output, actual_output)
 
 def parse_test_file(filepath):
@@ -28,21 +26,21 @@ def parse_test_file(filepath):
     with open(filepath, 'r') as fobj:
         at_output = False
         for line in fobj.readlines():
-            print(line, end ="")
-            if at_output:
-                output_list.append(line[3:])
-                continue
-            if line == "// === OUTPUT ===\n":
+            if line == "/* === START OUTPUT ===\n":
                 at_output = True
+                continue
+            elif line == "=== STOP OUTPUT === */\n" or line == "=== STOP OUTPUT === */":
+                break
+            elif at_output:
+                output_list.append(line)
 
-    print(output_list)
     return "".join(output_list)
 
 def run_test_file(filepath):
     args = ("./nqq", filepath)
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
-    return popen.stdout.read()
+    return popen.stdout.read().decode("utf-8")
 
 def diff_outputs(a, b):
     if a == b:
@@ -52,11 +50,3 @@ def diff_outputs(a, b):
 if __name__ == "__main__":
     root_dir = "test"
     test(root_dir)
-
-# args = ("bin/bar", "-c", "somefile.xml", "-d", "text.txt", "-r", "aString", "-f", "anotherString")
-# #Or just:
-# #args = "bin/bar -c somefile.xml -d text.txt -r aString -f anotherString".split()
-# popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-# popen.wait()
-# output = popen.stdout.read()
-# print output

@@ -1,5 +1,6 @@
 CC     = gcc
 CFLAGS = -Wall -g -c
+# for debugging add -DDEBUG to CFLAGS
 
 all: main.o chunk.o debug.o memory.o value.o vm.o compiler.o scanner.o object.o table.o
 	@$(CC) main.o chunk.o debug.o memory.o value.o vm.o compiler.o scanner.o object.o table.o -o nqq
