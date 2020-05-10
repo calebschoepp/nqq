@@ -91,6 +91,27 @@ static void skipWhitespace() {
                 if (peekNext() == '/') {
                     // A comment goes until the end of the line.
                     while (peek() != '\n' && !isAtEnd()) advance();
+                } else if (peekNext() == '*') {
+                    // Multiline comment
+                    int depth = 0;
+                    for (;;) {
+                        if (peek() == '*' && peekNext() == '/') {
+                            depth--;
+                        } else if (peek() == '/' && peekNext() == '*') {
+                            depth++;
+                        }
+                        if (depth == 0) {
+                            // Advance twice to consume closing '*/'
+                            advance();
+                            advance();
+                            break;
+                        }
+                        if (!isAtEnd()) {
+                            advance();
+                        } else {
+                            break;
+                        }
+                    }
                 } else {
                     return;
                 }
