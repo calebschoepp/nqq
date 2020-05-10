@@ -3,6 +3,8 @@
 #include "debug.h"
 #include "value.h"
 
+bool wide = false;
+
 void disassembleChunk(Chunk* chunk, const char* name) {
     printf("== %s ==\n", name);
 
@@ -12,23 +14,22 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
-    uint8_t constant = chunk->code[offset + 1];
-    printf("%-16s %4d '", name, constant);
-    printValue(chunk->constants.values[constant]);
-    printf("'\n");
-    return offset + 2;
-}
-
-static int constantLongInstruction(const char* name, Chunk* chunk, int offset) {
-    int constant = chunk->code[offset + 1];
-    constant = constant << 8;
-    constant |= chunk->code[offset + 2];
-    constant = constant << 8;
-    constant |= chunk->code[offset + 3];
-    printf("%-16s %4d '", name, constant);
-    printValue(chunk->constants.values[constant]);
-    printf("'\n");
-    return offset + 4;
+    if (wide) {
+        wide = false;
+        uint16_t constant = chunk->code[offset + 1];
+        constant = constant << 8;
+        constant |= chunk->code[offset + 2];
+        printf("%-16s %4d '", name, constant);
+        printValue(chunk->constants.values[constant]);
+        printf("'\n");
+        return offset + 3;
+    } else {
+        uint8_t constant = chunk->code[offset + 1];
+        printf("%-16s %4d '", name, constant);
+        printValue(chunk->constants.values[constant]);
+        printf("'\n");
+        return offset + 2;
+    }
 }
 
 static int simpleInstruction(const char* name, int offset) {
@@ -37,9 +38,24 @@ static int simpleInstruction(const char* name, int offset) {
 }
 
 static int byteInstruction(const char* name, Chunk* chunk, int offset) {
-    uint8_t slot = chunk->code[offset + 1];
-    printf("%-16s %4d\n", name, slot);
-    return offset + 2;
+    if (wide) {
+        wide = false;
+        uint16_t slot = chunk->code[offset + 1];
+        slot = slot << 8;
+        slot |= chunk->code[offset + 2];
+        printf("%-16s %4d\n", name, slot);
+        return offset + 3;
+    } else {
+        uint8_t slot = chunk->code[offset + 1];
+        printf("%-16s %4d\n", name, slot);
+        return offset + 2;
+    }
+}
+
+static int wideInstruction(const char* name, int offset) {
+    wide = true;
+    printf("%s\n", name);
+    return offset + 1;
 }
 
 int disassembleInstruction(Chunk* chunk, int offset) {
@@ -54,8 +70,6 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     switch (instruction) {
         case OP_CONSTANT:
             return constantInstruction("OP_CONSTANT", chunk, offset);
-        case OP_CONSTANT_LONG:
-            return constantLongInstruction("OP_CONSTANT_LONG", chunk, offset);
         case OP_NIL:
             return simpleInstruction("OP_NIL", offset);
         case OP_TRUE:
@@ -94,6 +108,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_NEGATE", offset);
         case OP_PRINT:
             return simpleInstruction("OP_PRINT", offset);
+        case OP_WIDE:
+            return wideInstruction("OP_WIDE", offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
         default:

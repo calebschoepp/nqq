@@ -10,6 +10,8 @@
 #define DEBUG_TRACE_EXECUTION
 #endif
 
-#define UINT8_COUNT (UINT8_MAX + 1)
+#define UINT8_COUNT (UINT8_MAX + 1) // TODO remove if not used
+#define UINT16_COUNT (UINT16_MAX + 1)
+
 
 #endif

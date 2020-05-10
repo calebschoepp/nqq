@@ -46,7 +46,7 @@ typedef struct {
 } Local;
 
 typedef struct Compiler {
-    Local locals[UINT8_COUNT];
+    Local locals[UINT16_COUNT];
     int localCount;
     int scopeDepth;
 } Compiler;
@@ -130,20 +130,26 @@ static void emitReturn() {
     emitByte(OP_RETURN);
 }
 
-// TODO switch to using 3 byte long consts
-static uint8_t makeConstant(Value value) {
+static uint16_t makeConstant(Value value) {
     int constant = addConstant(currentChunk(), value);
-    if (constant > UINT8_MAX) {
+    if (constant > UINT16_MAX) {
         error("Too many constants in one chunk.");
         return 0;
     }
 
-    return (uint8_t)constant;
+    return (uint16_t)constant;
 }
 
 static void emitConstant(Value value) {
-    // TODO verify this works
-    writeConstant(currentChunk(), value, parser.previous.line);
+    uint16_t constant = makeConstant(value);
+    if (constant < 256) {
+        emitBytes(OP_CONSTANT, (uint8_t)constant);
+    } else {
+        emitByte(OP_WIDE);
+        emitByte(OP_CONSTANT);
+        emitByte((uint8_t)(constant >> 8));
+        emitByte((uint8_t)constant);
+    }
 }
 
 static void initCompiler(Compiler* compiler) {
@@ -183,9 +189,9 @@ static void statement();
 static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
-static uint8_t identifierConstant(Token* name);
-static uint8_t parseVariable(const char* errorMessage);
-static void defineVariable(uint8_t global);
+static uint16_t identifierConstant(Token* name);
+static uint16_t parseVariable(const char* errorMessage);
+static void defineVariable(uint16_t global);
 static int resolveLocal(Compiler* compiler, Token* name);
 
 static void binary(bool canAssign) {
@@ -236,7 +242,7 @@ static void block() {
 }
 
 static void varDeclaration() {
-    uint8_t global = parseVariable("Expect variable name.");
+    uint16_t global = parseVariable("Expect variable name.");
 
     if (match(TOKEN_EQUAL)) {
         expression();
@@ -336,9 +342,23 @@ static void namedVariable(Token name, bool canAssign) {
 
     if (canAssign && match(TOKEN_EQUAL)) {
         expression();
-        emitBytes(setOp, (uint8_t)arg);
+        if (arg < 256) {
+            emitBytes(setOp, (uint8_t)arg);
+        } else {
+            emitByte(OP_WIDE);
+            emitByte(setOp);
+            emitByte((uint8_t)(arg >> 8));
+            emitByte((uint8_t)arg);
+        }
     } else {
-        emitBytes(getOp, (uint8_t)arg);
+        if (arg < 256) {
+            emitBytes(getOp, (uint8_t)arg);
+        } else {
+            emitByte(OP_WIDE);
+            emitByte(getOp);
+            emitByte((uint8_t)(arg >> 8));
+            emitByte((uint8_t)arg);
+        }
     }
 }
 
@@ -426,7 +446,7 @@ static void parsePrecedence(Precedence precedence) {
     }
 }
 
-static uint8_t identifierConstant(Token* name) {
+static uint16_t identifierConstant(Token* name) {
     return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
@@ -450,7 +470,7 @@ static int resolveLocal(Compiler* compiler, Token* name) {
 }
 
 static void addLocal(Token name) {
-    if (current->localCount == UINT8_COUNT) {
+    if (current->localCount == UINT16_COUNT) {
         error("Too many local variables in function.");
         return;
     }
@@ -477,7 +497,7 @@ static void declareVariable() {
     addLocal(*name);
 }
 
-static uint8_t parseVariable(const char* errorMessage) {
+static uint16_t parseVariable(const char* errorMessage) {
     consume(TOKEN_IDENTIFIER, errorMessage);
 
     declareVariable();
@@ -490,12 +510,19 @@ static void markInitialized() {
     current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
-static void defineVariable(uint8_t global) {
+static void defineVariable(uint16_t global) {
     if (current->scopeDepth > 0) {
         markInitialized();
         return;
     }
-    emitBytes(OP_DEFINE_GLOBAL, global);
+    if (global < 256) {
+        emitBytes(OP_DEFINE_GLOBAL, global);
+    } else {
+            emitByte(OP_WIDE);
+            emitByte(OP_DEFINE_GLOBAL);
+            emitByte((uint8_t)(global >> 8));
+            emitByte((uint8_t)global);
+    }
 }
 
 static ParseRule* getRule(TokenType type) {

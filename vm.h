@@ -5,7 +5,8 @@
 #include "table.h"
 #include "value.h"
 
-#define STACK_MAX 256 // TODO dynamically grow stack or throw stack overflow error
+// ~65 KB
+#define STACK_MAX 65536 // TODO dynamically grow stack or throw stack overflow error
 
 typedef struct {
     Chunk* chunk;

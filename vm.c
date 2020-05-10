@@ -75,23 +75,6 @@ static void concatenate() {
     push(OBJ_VAL(result));
 }
 
-// TODO define this as a macro like READ_CONSTANT()
-static Value readConstantLong() {
-#define READ_BYTE() (*vm.ip++)
-
-    // Read three bytes in big endian order
-    int index;
-    index = READ_BYTE();
-    index = index << 8;
-    index |= READ_BYTE();
-    index = index << 8;
-    index |= READ_BYTE();
-
-    return vm.chunk->constants.values[index];
-
-#undef READ_BYTE
-}
-
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
@@ -120,15 +103,10 @@ static InterpretResult run() {
         printf("\n");
         disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
 #endif
-        uint8_t instruction;
-        switch (instruction = READ_BYTE()) {
+        uint8_t instruction = READ_BYTE();
+        switch (instruction) {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
-                push(constant);
-                break;
-            }
-            case OP_CONSTANT_LONG: {
-                Value constant = readConstantLong();
                 push(constant);
                 break;
             }
@@ -210,6 +188,68 @@ static InterpretResult run() {
                 printValue(pop());
                 printf("\n");
                 break;
+            case OP_WIDE: {
+                uint8_t wideInstruction;
+                switch (wideInstruction = READ_BYTE()) {
+                    case OP_CONSTANT: {
+                        uint16_t idx = READ_BYTE();
+                        idx = idx << 8;
+                        idx |= READ_BYTE();
+                        Value constant = vm.chunk->constants.values[idx];
+                        push(constant);
+                        break;
+                    }
+                    case OP_GET_LOCAL: {
+                        uint16_t slot = READ_BYTE();
+                        slot = slot << 8;
+                        slot |= READ_BYTE();
+                        push(vm.stack[slot]);
+                        break;
+                    }
+                    case OP_SET_LOCAL: {
+                        uint16_t slot = READ_BYTE();
+                        slot = slot << 8;
+                        slot |= READ_BYTE();
+                        vm.stack[slot] = peek(0);
+                        break;
+                    }
+                    case OP_GET_GLOBAL: {
+                        uint16_t idx = READ_BYTE();
+                        idx = idx << 8;
+                        idx |= READ_BYTE();
+                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
+                        Value value;
+                        if (!tableGet(&vm.globals, name, &value)) {
+                            runtimeError("Undefined variable '%s'.", name->chars);
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+                        push(value);
+                        break;
+                    }
+                    case OP_DEFINE_GLOBAL: {
+                        uint16_t idx = READ_BYTE();
+                        idx = idx << 8;
+                        idx |= READ_BYTE();
+                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
+                        tableSet(&vm.globals, name, peek(0));
+                        pop();
+                        break;
+                    }
+                    case OP_SET_GLOBAL: {
+                        uint16_t idx = READ_BYTE();
+                        idx = idx << 8;
+                        idx |= READ_BYTE();
+                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
+                        if (tableSet(&vm.globals, name, peek(0))) {
+                            tableDelete(&vm.globals, name);
+                            runtimeError("Undefined variable '%s'.", name->chars);
+                            return INTERPRET_RUNTIME_ERROR;
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
             case OP_RETURN: {
                 // Exit interpreter
                 return INTERPRET_OK;

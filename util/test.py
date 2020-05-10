@@ -9,6 +9,8 @@ def test(root_dir):
     # Execute tests
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
+            if filename[0] == "_":
+                continue
             test_file(os.path.join(os.getcwd(), dirpath, filename))
 
     end_time = time.time()
@@ -19,7 +21,8 @@ def test_file(filepath):
     print(filepath) # TODO remove
     expected_output = parse_test_file(filepath)
     actual_output = run_test_file(filepath)
-    assert diff_outputs(expected_output, actual_output)
+    if not diff_outputs(expected_output, actual_output):
+        print("FAILURE")
 
 def parse_test_file(filepath):
     output_list = []
