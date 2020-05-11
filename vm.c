@@ -78,6 +78,8 @@ static void concatenate() {
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_SHORT() \
+    (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define BINARY_OP(valueType, op) \
@@ -188,35 +190,42 @@ static InterpretResult run() {
                 printValue(pop());
                 printf("\n");
                 break;
+            case OP_JUMP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip += offset;
+                break;
+            }
+            case OP_JUMP_IF_FALSE: {
+                uint16_t offset = READ_SHORT();
+                if (isFalsey(peek(0))) vm.ip += offset;
+                break;
+            }
+            case OP_LOOP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip -= offset;
+                break;
+            }
             case OP_WIDE: {
                 uint8_t wideInstruction;
                 switch (wideInstruction = READ_BYTE()) {
                     case OP_CONSTANT: {
-                        uint16_t idx = READ_BYTE();
-                        idx = idx << 8;
-                        idx |= READ_BYTE();
+                        uint16_t idx = READ_SHORT();
                         Value constant = vm.chunk->constants.values[idx];
                         push(constant);
                         break;
                     }
                     case OP_GET_LOCAL: {
-                        uint16_t slot = READ_BYTE();
-                        slot = slot << 8;
-                        slot |= READ_BYTE();
+                        uint16_t slot = READ_SHORT();
                         push(vm.stack[slot]);
                         break;
                     }
                     case OP_SET_LOCAL: {
-                        uint16_t slot = READ_BYTE();
-                        slot = slot << 8;
-                        slot |= READ_BYTE();
+                        uint16_t slot = READ_SHORT();
                         vm.stack[slot] = peek(0);
                         break;
                     }
                     case OP_GET_GLOBAL: {
-                        uint16_t idx = READ_BYTE();
-                        idx = idx << 8;
-                        idx |= READ_BYTE();
+                        uint16_t idx = READ_SHORT();
                         ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
                         Value value;
                         if (!tableGet(&vm.globals, name, &value)) {
@@ -227,18 +236,14 @@ static InterpretResult run() {
                         break;
                     }
                     case OP_DEFINE_GLOBAL: {
-                        uint16_t idx = READ_BYTE();
-                        idx = idx << 8;
-                        idx |= READ_BYTE();
+                        uint16_t idx = READ_SHORT();
                         ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
                         tableSet(&vm.globals, name, peek(0));
                         pop();
                         break;
                     }
                     case OP_SET_GLOBAL: {
-                        uint16_t idx = READ_BYTE();
-                        idx = idx << 8;
-                        idx |= READ_BYTE();
+                        uint16_t idx = READ_SHORT();
                         ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
                         if (tableSet(&vm.globals, name, peek(0))) {
                             tableDelete(&vm.globals, name);
@@ -259,6 +264,7 @@ static InterpretResult run() {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_SHORT
 #undef READ_STRING
 #undef BINARY_OP
 }
