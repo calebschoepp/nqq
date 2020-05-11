@@ -1,0 +1,30 @@
+if (true) {
+	print "good";
+} else if (false) {
+	print "bad";
+} else {
+	print "bad";
+}
+
+if (false) {
+	print "bad";
+} else if (true) {
+	print "good";
+} else {
+	print "bad";
+}
+
+if (false) {
+	print "bad";
+} else if (false) {
+	print "bad";
+} else {
+	print "good";
+}
+
+/* === START OUTPUT ===
+good
+good
+good
+=== STOP OUTPUT === */
+

@@ -1,0 +1,11 @@
+print !true;
+print !false;
+print !!true;
+print !!!false;
+
+/* === START OUTPUT ===
+false
+true
+true
+true
+=== STOP OUTPUT === */

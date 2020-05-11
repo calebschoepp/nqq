@@ -51,5 +51,5 @@ def diff_outputs(a, b):
     return False
 
 if __name__ == "__main__":
-    root_dir = "test"
+    root_dir = "test/e2e"
     test(root_dir)

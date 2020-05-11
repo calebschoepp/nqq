@@ -15,7 +15,7 @@ C implementation of nqq (modified implementation of clox)
 - Continue statement
 - Lambdas
 - Comprehensions
-- Multi-line comments
+- Multi-line comments (DONE)
 - Postfix/prefix increment/decrement
 - Exponent operator
 - Short hand assignment operators
@@ -24,3 +24,5 @@ C implementation of nqq (modified implementation of clox)
 - Modulo operator
 - Bitwise operator
 - Assert (Make my debugging life way easier)
+- Build a end to end testing frameworks
+- Build a benchmarking framework
