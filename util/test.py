@@ -47,9 +47,9 @@ class TestRunner():
             total_time += v.run_time
             suite_summary = []
             if v.failure_count == 0:
-                suite_summary.append("PASS")
+                suite_summary.append(ColorPrinter.okgreen("PASS"))
             else:
-                suite_summary.append("FAIL")
+                suite_summary.append(ColorPrinter.fail("FAIL"))
             suite_summary.append(k)
             suite_summary.append(f"({v.run_time:2.3f} s)")
 
@@ -58,9 +58,9 @@ class TestRunner():
         print()
         runner_summary = []
         if total_failures == 0:
-            runner_summary.append("PASS")
+            runner_summary.append(ColorPrinter.okgreen("PASS"))
         else:
-            runner_summary.append("FAIL")
+            runner_summary.append(ColorPrinter.fail("FAIL"))
         runner_summary.append(f"{total_tests - total_failures} of {total_tests} tests passed")
         runner_summary.append(f"({total_time:2.3f} s)")
 
@@ -153,64 +153,40 @@ class Test():
             self.build_fail_output()
 
     def build_pass_output(self):
-        self.output = f"PASS  {self.filename}\n"
+        self.output = f"{ColorPrinter.okgreen('PASS')}  {self.filename}\n"
 
     def build_fail_output(self):
-        temp_output = [f"FAIL  {self.filename}\n"]
-        temp_output.append("<<<<<<< Expected Output\n")
-        temp_output.append(self.expected)
-        temp_output.append("=======\n")
-        temp_output.append(self.actual)
-        temp_output.append(">>>>>>> Actual Output\n")
+        temp_output = []
+        temp_output.append(f"{ColorPrinter.fail('FAIL')}  {self.filename}\n")
+        temp_output.append(ColorPrinter.warning("<<<<<<< Expected Output\n"))
+        temp_output.append(ColorPrinter.warning(self.expected))
+        temp_output.append(ColorPrinter.warning("=======\n"))
+        temp_output.append(ColorPrinter.warning(self.actual))
+        temp_output.append(ColorPrinter.warning(">>>>>>> Actual Output\n"))
 
-        self.output = "".join(temp_output)
+        self.output = ColorPrinter.warning("".join(temp_output))
 
-# def test(root_dir):
-#     start_time = time.time()
+class ColorPrinter():
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
-#     # Execute tests
-#     for dirpath, dirnames, filenames in os.walk(root_dir):
-#         for filename in filenames:
-#             if filename[0] == "_":
-#                 continue
-#             test_file(os.path.join(os.getcwd(), dirpath, filename))
+    @classmethod
+    def fail(cls, s):
+        return cls.FAIL + s + cls.ENDC
 
-#     end_time = time.time()
-#     total_time = end_time - start_time
-#     print(f"{round(total_time, 3)} s")
+    @classmethod
+    def warning(cls, s):
+        return cls.WARNING + s + cls.ENDC
 
-# def test_file(filepath):
-#     print(filepath) # TODO remove
-#     expected_output = parse_test_file(filepath)
-#     actual_output = run_test_file(filepath)
-#     if not diff_outputs(expected_output, actual_output):
-#         print("FAILURE")
-
-# def parse_test_file(filepath):
-#     output_list = []
-#     with open(filepath, 'r') as fobj:
-#         at_output = False
-#         for line in fobj.readlines():
-#             if line == "/* === START OUTPUT ===\n":
-#                 at_output = True
-#                 continue
-#             elif line == "=== STOP OUTPUT === */\n" or line == "=== STOP OUTPUT === */":
-#                 break
-#             elif at_output:
-#                 output_list.append(line)
-
-#     return "".join(output_list)
-
-# def run_test_file(filepath):
-#     args = ("./nqq", filepath)
-#     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-#     popen.wait()
-#     return popen.stdout.read().decode("utf-8")
-
-# def diff_outputs(a, b):
-#     if a == b:
-#         return True
-#     return False
+    @classmethod
+    def okgreen(cls, s):
+        return cls.OKGREEN + s + cls.ENDC
 
 if __name__ == "__main__":
     # Check that current working directory is correct
