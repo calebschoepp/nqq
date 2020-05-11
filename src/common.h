@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// TODO maybe don't need #ifdef DEBUG
 #ifdef DEBUG
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
