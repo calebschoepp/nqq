@@ -4,8 +4,6 @@
 #include "memory.h"
 
 static void setLine(Chunk* chunk, int line) {
-    // Assumes that opcode line numbers are monotonically increasing
-    // TODO verify this assumption
     if (chunk->linesCapacity < line) {
         int oldLinesCapacity = chunk->linesCapacity;
         int potentialNewCapacity = GROW_CAPACITY(oldLinesCapacity);
@@ -17,14 +15,12 @@ static void setLine(Chunk* chunk, int line) {
     }
 
     chunk->lines[line - 1] = chunk->lines[line - 1] + 1;
-    chunk->linesCount++;
 }
 
 void initChunk(Chunk* chunk) {
     chunk->count = 0;
     chunk->capacity = 0;
     chunk->code = NULL;
-    chunk->linesCount = 0; // TODO maybe don't need this count
     chunk->linesCapacity = 0;
     chunk->lines = NULL;
     initValueArray(&chunk->constants);
