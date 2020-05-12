@@ -3,130 +3,190 @@
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "main.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "main.o"
+   "build/debug/nqqd/value.o",
+   "src/value.c"
   ],
-  "file": "main.c"
+  "file": "src/value.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "chunk.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "chunk.o"
+   "build/debug/nqqd/table.o",
+   "src/table.c"
   ],
-  "file": "chunk.c"
+  "file": "src/table.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "debug.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "debug.o"
+   "build/debug/nqqd/compiler.o",
+   "src/compiler.c"
   ],
-  "file": "debug.c"
+  "file": "src/compiler.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "memory.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "memory.o"
+   "build/debug/nqqd/chunk.o",
+   "src/chunk.c"
   ],
-  "file": "memory.c"
+  "file": "src/chunk.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "value.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "value.o"
+   "build/debug/nqqd/memory.o",
+   "src/memory.c"
   ],
-  "file": "value.c"
+  "file": "src/memory.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "vm.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "vm.o"
+   "build/debug/nqqd/main.o",
+   "src/main.c"
   ],
-  "file": "vm.c"
+  "file": "src/main.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "compiler.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "compiler.o"
+   "build/debug/nqqd/object.o",
+   "src/object.c"
   ],
-  "file": "compiler.c"
+  "file": "src/object.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "scanner.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "scanner.o"
+   "build/debug/nqqd/vm.o",
+   "src/vm.c"
   ],
-  "file": "scanner.c"
+  "file": "src/vm.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "object.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "object.o"
+   "build/debug/nqqd/debug.o",
+   "src/debug.c"
   ],
-  "file": "object.c"
+  "file": "src/debug.c"
  },
  {
   "directory": "/home/caleb/batcave/nqq",
   "arguments": [
    "gcc",
-   "table.c",
-   "-Wall",
-   "-g",
    "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-DDEBUG",
+   "-g",
    "-o",
-   "table.o"
+   "build/debug/nqqd/scanner.o",
+   "src/scanner.c"
   ],
-  "file": "table.c"
+  "file": "src/scanner.c"
  }
 ]
