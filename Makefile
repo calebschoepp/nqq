@@ -1,10 +1,9 @@
-# TODO write a bunch of comments up here about general build process
-#
-#
-#
+# To generate both a release and debug binary just run `make`
 
 SOURCE_DIR := src
 BASE_BUILD_DIR := build
+RELEASE_BINARY := nqq
+DEBUG_BINARY := nqqd
 CC         := gcc
 CFLAGS     := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
 
@@ -42,19 +41,19 @@ all:
 .PHONY: release
 release:
 	@ printf "Compilng release binary\n"
-	@ $(MAKE) build MODE=release NAME=nqq --no-print-directory
+	@ $(MAKE) build MODE=release NAME=$(RELEASE_BINARY) --no-print-directory
 
 .PHONY: debug
 debug:
 	@ printf "Compilng debug binary\n"
-	@ $(MAKE) build MODE=debug NAME=nqqd --no-print-directory
+	@ $(MAKE) build MODE=debug NAME=$(DEBUG_BINARY) --no-print-directory
 
 # TODO store binaries in a place where I don't need to manullay reference them
 .PHONY: clean
 clean:
 	@ rm -rf $(BASE_BUILD_DIR)
-	@ rm -f nqq
-	@ rm -f nqqd
+	@ rm -f $(RELEASE_BINARY)
+	@ rm -f $(DEBUG_BINARY)
 
 .PHONY: test
 test:
