@@ -3,8 +3,6 @@
 #include "debug.h"
 #include "value.h"
 
-// TODO increase width of constant index column to account for 16 bit indexes
-
 bool wide = false;
 
 void disassembleChunk(Chunk* chunk, const char* name) {
@@ -21,13 +19,13 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
         uint16_t constant = chunk->code[offset + 1];
         constant = constant << 8;
         constant |= chunk->code[offset + 2];
-        printf("%-16s %4d '", name, constant);
+        printf("%-16s %5d '", name, constant);
         printValue(chunk->constants.values[constant]);
         printf("'\n");
         return offset + 3;
     } else {
         uint8_t constant = chunk->code[offset + 1];
-        printf("%-16s %4d '", name, constant);
+        printf("%-16s %5d '", name, constant);
         printValue(chunk->constants.values[constant]);
         printf("'\n");
         return offset + 2;
@@ -45,11 +43,11 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
         uint16_t slot = chunk->code[offset + 1];
         slot = slot << 8;
         slot |= chunk->code[offset + 2];
-        printf("%-16s %4d\n", name, slot);
+        printf("%-16s %5d\n", name, slot);
         return offset + 3;
     } else {
         uint8_t slot = chunk->code[offset + 1];
-        printf("%-16s %4d\n", name, slot);
+        printf("%-16s %5d\n", name, slot);
         return offset + 2;
     }
 }
@@ -57,7 +55,7 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
 static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset) {
     uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8);
     jump |= chunk->code[offset + 2];
-    printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+    printf("%-16s %5d -> %d\n", name, offset, offset + 3 + sign * jump);
     return offset + 3;
 }     
 

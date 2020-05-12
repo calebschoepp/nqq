@@ -48,7 +48,6 @@ debug:
 	@ printf "Compilng debug binary\n"
 	@ $(MAKE) build MODE=debug NAME=$(DEBUG_BINARY) --no-print-directory
 
-# TODO store binaries in a place where I don't need to manullay reference them
 .PHONY: clean
 clean:
 	@ rm -rf $(BASE_BUILD_DIR)
