@@ -4,7 +4,7 @@ def header():
 def footer():
     return "=== STOP OUTPUT === */\n"
 
-MAX = 257
+MAX = 500
 
 with open("global.nqq", 'w') as f:
     print("Building globals")

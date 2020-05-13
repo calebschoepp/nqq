@@ -3,7 +3,8 @@
 #include "debug.h"
 #include "value.h"
 
-bool wide = false;
+// Silently continues if op after OP_WIDE is not a wide op
+bool nextOpWide = false;
 
 void disassembleChunk(Chunk* chunk, const char* name) {
     printf("== %s ==\n", name);
@@ -14,8 +15,8 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
-    if (wide) {
-        wide = false;
+    if (nextOpWide) {
+        nextOpWide = false;
         uint16_t constant = chunk->code[offset + 1];
         constant = constant << 8;
         constant |= chunk->code[offset + 2];
@@ -38,8 +39,8 @@ static int simpleInstruction(const char* name, int offset) {
 }
 
 static int byteInstruction(const char* name, Chunk* chunk, int offset) {
-    if (wide) {
-        wide = false;
+    if (nextOpWide) {
+        nextOpWide = false;
         uint16_t slot = chunk->code[offset + 1];
         slot = slot << 8;
         slot |= chunk->code[offset + 2];
@@ -60,7 +61,7 @@ static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset)
 }     
 
 static int wideInstruction(const char* name, int offset) {
-    wide = true;
+    nextOpWide = true;
     printf("%s\n", name);
     return offset + 1;
 }
@@ -85,6 +86,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_FALSE", offset);
         case OP_POP:
             return simpleInstruction("OP_POP", offset);
+        case OP_POP_N:
+            return byteInstruction("OP_POP_N", chunk, offset);
         case OP_GET_LOCAL:
             return byteInstruction("OP_GET_LOCAL", chunk, offset);
         case OP_SET_LOCAL:

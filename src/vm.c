@@ -33,6 +33,8 @@ void initVM() {
     resetStack();
     vm.objects = NULL;
 
+    vm.nextOpWide--;
+
     initTable(&vm.globals);
     initTable(&vm.strings);
 }
@@ -105,162 +107,169 @@ static InterpretResult run() {
         printf("\n");
         disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
 #endif
-        uint8_t instruction = READ_BYTE();
-        switch (instruction) {
-            case OP_CONSTANT: {
+    uint8_t instruction = READ_BYTE();
+    switch (instruction) {
+        case OP_CONSTANT: {
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t idx = READ_SHORT();
+                Value constant = vm.chunk->constants.values[idx];
+                push(constant);
+            } else {
                 Value constant = READ_CONSTANT();
                 push(constant);
-                break;
             }
-            case OP_NIL: push(NIL_VAL); break;
-            case OP_TRUE: push(BOOL_VAL(true)); break;
-            case OP_FALSE: push(BOOL_VAL(false)); break;
-            case OP_POP: pop(); break;
-            case OP_GET_LOCAL: {
+            break;
+        }
+        case OP_NIL: push(NIL_VAL); break;
+        case OP_TRUE: push(BOOL_VAL(true)); break;
+        case OP_FALSE: push(BOOL_VAL(false)); break;
+        case OP_POP: pop(); break;
+        case OP_POP_N: {
+            uint8_t popCount = READ_BYTE();
+            for (int i = 0; i < popCount; i++) {
+                pop();
+            }
+            break;
+        }
+        case OP_GET_LOCAL: {
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t slot = READ_SHORT();
+                push(vm.stack[slot]);
+            } else {
                 uint8_t slot = READ_BYTE();
                 push(vm.stack[slot]);
-                break;
             }
-            case OP_SET_LOCAL: {
+            break;
+        }
+        case OP_SET_LOCAL: {
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t slot = READ_SHORT();
+                vm.stack[slot] = peek(0);
+            } else {
                 uint8_t slot = READ_BYTE();
                 vm.stack[slot] = peek(0);
-                break;
             }
-            case OP_GET_GLOBAL: {
-                ObjString* name = READ_STRING();
-                Value value;
-                if (!tableGet(&vm.globals, name, &value)) {
-                    runtimeError("Undefined variable '%s'.", name->chars);
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                push(value);
-                break;
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            ObjString* name;
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t idx = READ_SHORT();
+                name = AS_STRING(vm.chunk->constants.values[idx]);
+            } else {
+                name = READ_STRING();
             }
-            case OP_DEFINE_GLOBAL: {
-                ObjString* name = READ_STRING();
-                tableSet(&vm.globals, name, peek(0));
-                pop();
-                break;
+            Value value;
+            if (!tableGet(&vm.globals, name, &value)) {
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
             }
-            case OP_SET_GLOBAL: {
-                ObjString* name = READ_STRING();
-                if (tableSet(&vm.globals, name, peek(0))) {
-                    tableDelete(&vm.globals, name);
-                    runtimeError("Undefined variable '%s'.", name->chars);
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                break;
+            push(value);
+            break;
+        }
+        case OP_DEFINE_GLOBAL: {
+            ObjString* name;
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t idx = READ_SHORT();
+                name = AS_STRING(vm.chunk->constants.values[idx]);
+            } else {
+                name = READ_STRING();
             }
-            case OP_EQUAL: {
-                Value b = pop();
-                Value a = pop();
-                push(BOOL_VAL(valuesEqual(a, b)));
-                break;
+            tableSet(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
+        case OP_SET_GLOBAL: {
+            ObjString* name;
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                uint16_t idx = READ_SHORT();
+                name = AS_STRING(vm.chunk->constants.values[idx]);
+            } else {
+                name = READ_STRING();
             }
-            case OP_GREATER:  BINARY_OP(BOOL_VAL, >); break;
-            case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
-            case OP_ADD: {
-                if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
-                    concatenate();
-                } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
-                    double b = AS_NUMBER(pop());
-                    double a = AS_NUMBER(pop());
-                    push(NUMBER_VAL(a + b));
-                } else {
-                    runtimeError("Operands must be two numbers or two strings.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                break;
+            if (tableSet(&vm.globals, name, peek(0))) {
+                tableDelete(&vm.globals, name);
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
             }
-            case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
-            case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
-            case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
-            case OP_NOT:
-                push(BOOL_VAL(isFalsey(pop())));
-                break;
-            case OP_NEGATE:
-                if (!IS_NUMBER(peek(0))) {
-                    runtimeError("Operand must be a number.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
+            break;
+        }
+        case OP_EQUAL: {
+            Value b = pop();
+            Value a = pop();
+            push(BOOL_VAL(valuesEqual(a, b)));
+            break;
+        }
+        case OP_GREATER:  BINARY_OP(BOOL_VAL, >); break;
+        case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
+        case OP_ADD: {
+            if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
+                concatenate();
+            } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+                double b = AS_NUMBER(pop());
+                double a = AS_NUMBER(pop());
+                push(NUMBER_VAL(a + b));
+            } else {
+                runtimeError("Operands must be two numbers or two strings.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+        case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
+        case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
+        case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
+        case OP_NOT:
+            push(BOOL_VAL(isFalsey(pop())));
+            break;
+        case OP_NEGATE:
+            if (!IS_NUMBER(peek(0))) {
+                runtimeError("Operand must be a number.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
 
-                push(NUMBER_VAL(-AS_NUMBER(pop())));
-                break;
-            case OP_PRINT:
-                printValue(pop());
-                printf("\n");
-                break;
-            case OP_JUMP: {
-                uint16_t offset = READ_SHORT();
-                vm.ip += offset;
-                break;
-            }
-            case OP_JUMP_IF_FALSE: {
-                uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) vm.ip += offset;
-                break;
-            }
-            case OP_LOOP: {
-                uint16_t offset = READ_SHORT();
-                vm.ip -= offset;
-                break;
-            }
-            case OP_WIDE: {
-                uint8_t wideInstruction;
-                switch (wideInstruction = READ_BYTE()) {
-                    case OP_CONSTANT: {
-                        uint16_t idx = READ_SHORT();
-                        Value constant = vm.chunk->constants.values[idx];
-                        push(constant);
-                        break;
-                    }
-                    case OP_GET_LOCAL: {
-                        uint16_t slot = READ_SHORT();
-                        push(vm.stack[slot]);
-                        break;
-                    }
-                    case OP_SET_LOCAL: {
-                        uint16_t slot = READ_SHORT();
-                        vm.stack[slot] = peek(0);
-                        break;
-                    }
-                    case OP_GET_GLOBAL: {
-                        uint16_t idx = READ_SHORT();
-                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
-                        Value value;
-                        if (!tableGet(&vm.globals, name, &value)) {
-                            runtimeError("Undefined variable '%s'.", name->chars);
-                            return INTERPRET_RUNTIME_ERROR;
-                        }
-                        push(value);
-                        break;
-                    }
-                    case OP_DEFINE_GLOBAL: {
-                        uint16_t idx = READ_SHORT();
-                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
-                        tableSet(&vm.globals, name, peek(0));
-                        pop();
-                        break;
-                    }
-                    case OP_SET_GLOBAL: {
-                        uint16_t idx = READ_SHORT();
-                        ObjString* name = AS_STRING(vm.chunk->constants.values[idx]);
-                        if (tableSet(&vm.globals, name, peek(0))) {
-                            tableDelete(&vm.globals, name);
-                            runtimeError("Undefined variable '%s'.", name->chars);
-                            return INTERPRET_RUNTIME_ERROR;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            case OP_RETURN: {
-                // Exit interpreter
-                return INTERPRET_OK;
-            }
+            push(NUMBER_VAL(-AS_NUMBER(pop())));
+            break;
+        case OP_PRINT:
+            printValue(pop());
+            printf("\n");
+            break;
+        case OP_JUMP: {
+            uint16_t offset = READ_SHORT();
+            vm.ip += offset;
+            break;
+        }
+        case OP_JUMP_IF_FALSE: {
+            uint16_t offset = READ_SHORT();
+            if (isFalsey(peek(0))) vm.ip += offset;
+            break;
+        }
+        case OP_LOOP: {
+            uint16_t offset = READ_SHORT();
+            vm.ip -= offset;
+            break;
+        }
+        case OP_WIDE: {
+            vm.nextOpWide = 2;
+            break;
+        }
+        case OP_RETURN: {
+            // Exit interpreter
+            return INTERPRET_OK;
         }
     }
+    if (vm.nextOpWide == 1) {
+        runtimeError("OP_WIDE used on an invalid opcode.");
+        return INTERPRET_RUNTIME_ERROR;
+    } else if (vm.nextOpWide == 2) {
+        vm.nextOpWide--;
+    }
+}
 
 #undef READ_BYTE
 #undef READ_CONSTANT

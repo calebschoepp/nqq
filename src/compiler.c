@@ -201,15 +201,21 @@ static void beginScope() {
 }
 
 static void endScope() {
-    // TODO optimize this with by building a OP_POPN instruction
-    // Op would take operand for number of slots to pop all at once
     current->scopeDepth--;
 
+    uint16_t popCount = 0;
     while (current->localCount > 0 &&
         current->locals[current->localCount - 1].depth > current->scopeDepth) {
-            emitByte(OP_POP);;
+            popCount++;
             current->localCount--;
         }
+
+    while (popCount > 0) {
+        int count = popCount >= 255 ? 255 : popCount;
+        emitByte(OP_POP_N);
+        emitByte(count);
+        popCount = popCount - count;
+    }
 }
 
 // Forward declarations to get around recursive nature of grammar

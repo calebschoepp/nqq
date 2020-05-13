@@ -8,6 +8,12 @@
 // ~65 KB
 #define STACK_MAX 65536 // TODO dynamically grow stack or throw stack overflow error
 
+// vm.nextOpWide
+// 2 -> Was just set.
+// 1 -> Next instruction should be wide. Is runtime error if no instruction uses this.
+// 0 -> N/A.
+// TODO optimize the 2 if statements out of the critical path
+
 typedef struct {
     Chunk* chunk;
     uint8_t* ip;
@@ -15,6 +21,7 @@ typedef struct {
     Value* stackTop;
     Table globals;
     Table strings;
+    uint8_t nextOpWide;
 
     Obj* objects;
 } VM;
