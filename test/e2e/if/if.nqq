@@ -5,7 +5,7 @@ if (true) {
 	print "hello";
 }
 
-var a = false;
+let a = false;
 if (a = true) print a;
 
 /* === START OUTPUT ===

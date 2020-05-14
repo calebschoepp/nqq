@@ -300,7 +300,7 @@ static void forStatement() {
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON)) {
         // Not initializer
-    } else if (match(TOKEN_VAR)) {
+    } else if (match(TOKEN_LET)) {
         varDeclaration();
     } else {
         expressionStatement();
@@ -394,7 +394,7 @@ static void synchronize() {
         switch (parser.current.type) {
         case TOKEN_CLASS:
         case TOKEN_FUN:
-        case TOKEN_VAR:
+        case TOKEN_LET:
         case TOKEN_FOR:
         case TOKEN_IF:
         case TOKEN_WHILE:
@@ -412,7 +412,7 @@ static void synchronize() {
 }
 
 static void declaration() {
-    if (match(TOKEN_VAR)) {
+    if (match(TOKEN_LET)) {
         varDeclaration();
     } else {
         statement();
@@ -556,6 +556,7 @@ ParseRule rules[] = {
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
+    { NULL,     NULL,    PREC_NONE },       // TOKEN_LET
     { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
     { NULL,     or_,     PREC_OR },       // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
@@ -563,7 +564,6 @@ ParseRule rules[] = {
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
     { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_VAR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_EOF
