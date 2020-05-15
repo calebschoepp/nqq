@@ -3,6 +3,11 @@ import subprocess
 import sys
 import time
 
+# TODO fix bug where a test fails and test runner hangs waiting on process
+# TODO add support for error templating
+# TODO fix bug where errors show up before output diff
+# TODO add a whole boat load more tests
+
 class TestRunner():
     """
     TestRunner handles finding all of the test suites, executing them, and

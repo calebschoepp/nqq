@@ -40,12 +40,12 @@ all:
 
 .PHONY: release
 release:
-	@ printf "Compilng release binary\n"
+	@ printf "Compiling release binary\n"
 	@ $(MAKE) build MODE=release NAME=$(RELEASE_BINARY) --no-print-directory
 
 .PHONY: debug
 debug:
-	@ printf "Compilng debug binary\n"
+	@ printf "Compiling debug binary\n"
 	@ $(MAKE) build MODE=debug NAME=$(DEBUG_BINARY) --no-print-directory
 
 .PHONY: clean
