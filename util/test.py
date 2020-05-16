@@ -85,7 +85,6 @@ c_interpreter('nqq', {
   'test/variable/local_from_method.nqq': 'skip',
 
   'test/e2e': 'skip',
-  'test/limit': 'skip',
 })
 
 class Test:
