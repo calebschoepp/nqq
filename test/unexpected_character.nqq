@@ -1,3 +1,2 @@
-// [line 3] Error: Unexpected character.
-// [java line 3] Error at 'b': Expect ')' after arguments.
+// [line 2] Error: Unexpected character.
 foo(a | b);

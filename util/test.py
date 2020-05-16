@@ -1,7 +1,5 @@
 #!./util/env/bin/python3
 
-from __future__ import print_function
-
 from collections import defaultdict
 from os import listdir
 from os.path import abspath, basename, dirname, isdir, isfile, join, realpath, relpath, splitext
@@ -16,7 +14,7 @@ REPO_DIR = dirname(dirname(realpath(__file__)))
 
 OUTPUT_EXPECT = re.compile(r'// expect: ?(.*)')
 ERROR_EXPECT = re.compile(r'// (Error.*)')
-ERROR_LINE_EXPECT = re.compile(r'// \[((java|c) )?line (\d+)\] (Error.*)')
+ERROR_LINE_EXPECT = re.compile(r'// \[line (\d+)\] (Error.*)')
 RUNTIME_ERROR_EXPECT = re.compile(r'// expect runtime error: (.+)')
 SYNTAX_ERROR_RE = re.compile(r'\[.*line (\d+)\] (Error.+)')
 STACK_TRACE_RE = re.compile(r'\[line (\d+)\]')
@@ -42,12 +40,12 @@ class Interpreter:
 
 
 def c_interpreter(name, tests):
-  path = name
+  path = 'nqq'
 
   INTERPRETERS[name] = Interpreter(name, 'c', [path], tests)
   SUITES.append(name)
 
-c_interpreter('nqq', {
+c_interpreter('All Tests', {
   'test': 'pass',
 
   # No closures.
@@ -135,19 +133,12 @@ class Test:
 
         match = ERROR_LINE_EXPECT.search(line)
         if match:
-          # The two interpreters are slightly different in terms of which
-          # cascaded errors may appear after an initial compile error because
-          # their panic mode recovery is a little different. To handle that,
-          # the tests can indicate if an error line should only appear for a
-          # certain interpreter.
-          language = match.group(2)
-          if not language or language == interpreter.language:
-            self.compile_errors.add("[{0}] {1}".format(
-                match.group(3), match.group(4)))
+          self.compile_errors.add("[{0}] {1}".format(
+              match.group(1), match.group(2)))
 
-            # If we expect a compile error, it should exit with EX_DATAERR.
-            self.exit_code = 65
-            expectations += 1
+          # If we expect a compile error, it should exit with EX_DATAERR.
+          self.exit_code = 65
+          expectations += 1
 
         match = RUNTIME_ERROR_EXPECT.search(line)
         if match:
