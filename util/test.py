@@ -50,10 +50,6 @@ def c_interpreter(name, tests):
 c_interpreter('nqq', {
   'test': 'pass',
 
-  # These are just for earlier chapters.
-  'test/scanning': 'skip',
-  'test/expressions': 'skip',
-
   # No closures.
   'test/closure': 'skip',
   'test/for/closure_in_body.nqq': 'skip',
@@ -83,8 +79,6 @@ c_interpreter('nqq', {
   'test/super': 'skip',
   'test/this': 'skip',
   'test/variable/local_from_method.nqq': 'skip',
-
-  'test/e2e': 'skip',
 })
 
 class Test:
