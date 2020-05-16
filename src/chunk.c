@@ -3,6 +3,7 @@
 #include "chunk.h"
 #include "memory.h"
 
+// TODO fix this now that line number doesn't always start at 1
 static void setLine(Chunk* chunk, int line) {
     if (chunk->linesCapacity < line) {
         int oldLinesCapacity = chunk->linesCapacity;

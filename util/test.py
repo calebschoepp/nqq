@@ -2,8 +2,8 @@ import os
 import subprocess
 import sys
 import time
+import re
 
-# TODO fix bug where a test fails and test runner hangs waiting on process
 # TODO add support for error templating
 # TODO fix bug where errors show up before output diff
 # TODO add a whole boat load more tests
@@ -111,22 +111,33 @@ class TestSuite():
             return True
         return False
 
+# TODO is assuming invariant that no proper output follows errors
 class Test():
     """
     Test parses, executes, and evaluates the success of a test given by a
     filename.
     """
+    TEST_TIMEOUT = 1
+
     def __init__(self, filename):
+        print(filename)
         self.filename = filename
         self.failed = True
         self.output = ""
         self.expected = ""
-        self.actual = ""
+        self.actual_stdout = ""
+        self.actual_stderr = ""
+        self.actual_stderr_modified = ""
 
     def execute(self):
         self.parse_expected()
         self.get_actual()
+        self.modify_actual_std_err()
         self.diff()
+        if self.failed:
+            self.build_fail_output()
+        else:
+            self.build_pass_output()
 
     def parse_expected(self):
         output_list = []
@@ -145,17 +156,73 @@ class Test():
 
     def get_actual(self):
         args = ("./nqq", self.filename)
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        popen.wait()
-        self.actual = popen.stdout.read().decode("utf-8")
+        popen = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            popen.wait(timeout=self.TEST_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            self.actual_stderr = "<TEST TIMEOUT>\n"
+            return
+
+        self.actual_stdout = popen.stdout.read().decode("utf-8")
+        self.actual_stderr = popen.stderr.read().decode("utf-8")
+
+    def modify_actual_std_err(self):
+        i = 0
+        while i < len(self.actual_stderr):
+            search = re.search(r"\[line (\d)*\] Error at", self.actual_stderr[i:])
+            if search is not None and search.span()[0] == 0:
+                self.actual_stderr_modified += "<COMPILE ERROR>\n"
+                x = 0
+                while i < len(self.actual_stderr) and self.actual_stderr_modified[x] != '\n':
+                    i += 1
+                    x += 1
+                continue
+            # There is still error text and it isn't a compile error so must be runtime
+            search = re.search(r"(.*)\n\[line (\d)*\] in", self.actual_stderr[i:])
+            if search is not None and search.span()[0] == 0:
+                self.actual_stderr_modified += "<RUNTIME ERROR>\n"
+                x = 0
+                while i < len(self.actual_stderr) and self.actual_stderr_modified[x] != '\n':
+                    i += 1
+                    x += 1
+                continue
+            else:
+                i += 1
 
     def diff(self):
-        if self.actual == self.expected:
-            self.failed = False
-            self.build_pass_output()
-        else:
+        print('--------------------------------------------------------')
+        print(f"stdout: {self.actual_stdout}")
+        print(f"stderr: {self.actual_stderr}")
+        print(f"stderr mod: {self.actual_stderr_modified}")
+        print(f"expected: {self.expected}")
+        i = 0
+        while i < min(len(self.actual_stdout), len(self.expected)):
+            if self.actual_stdout[i] != self.expected[i]:
+                self.failed = True
+                print(2)
+                return
+            i += 1
+
+        if i != len(self.actual_stdout) and i == len(self.expected):
             self.failed = True
-            self.build_fail_output()
+            print(3)
+            return
+
+        if i == len(self.actual_stdout) and i == len(self.expected):
+            self.failed = False
+            print(4)
+            return
+
+        # No more stdout but expecting more at this point, compare errors
+        j = 0
+        while j < min(len(self.actual_stderr_modified), len(self.expected) - i):
+            if self.actual_stderr_modified[j] != self.expected[i + j]:
+                self.failed = True
+                print(5)
+                return
+            j += 1
+
+        self.failed = False
 
     def build_pass_output(self):
         self.output = f"{ColorPrinter.okgreen('PASS')}  {self.filename}\n"
@@ -166,7 +233,8 @@ class Test():
         temp_output.append(ColorPrinter.warning("<<<<<<< Expected Output\n"))
         temp_output.append(ColorPrinter.warning(self.expected))
         temp_output.append(ColorPrinter.warning("=======\n"))
-        temp_output.append(ColorPrinter.warning(self.actual))
+        temp_output.append(ColorPrinter.warning(self.actual_stdout))
+        temp_output.append(ColorPrinter.warning(self.actual_stderr_modified))
         temp_output.append(ColorPrinter.warning(">>>>>>> Actual Output\n"))
 
         self.output = ColorPrinter.warning("".join(temp_output))

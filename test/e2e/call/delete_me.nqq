@@ -1,0 +1,5 @@
+var a = "b";
+
+/* === START OUTPUT ===
+<COMPILE ERROR>
+=== STOP OUTPUT === */
