@@ -41,6 +41,7 @@ typedef struct {
     int linesCount;
     int linesCapacity;
     int* lines;
+    int firstLine;
     ValueArray constants;
 } Chunk;
 

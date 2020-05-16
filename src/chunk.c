@@ -3,8 +3,11 @@
 #include "chunk.h"
 #include "memory.h"
 
-// TODO fix this now that line number doesn't always start at 1
 static void setLine(Chunk* chunk, int line) {
+    if (chunk->firstLine == 0) {
+        chunk->firstLine = line;
+    }
+
     if (chunk->linesCapacity < line) {
         int oldLinesCapacity = chunk->linesCapacity;
         int potentialNewCapacity = GROW_CAPACITY(oldLinesCapacity);
@@ -24,6 +27,7 @@ void initChunk(Chunk* chunk) {
     chunk->code = NULL;
     chunk->linesCapacity = 0;
     chunk->lines = NULL;
+    chunk->firstLine = 0;
     initValueArray(&chunk->constants);
 }
 
@@ -58,5 +62,5 @@ int getLine(Chunk* chunk, int offset) {
         opCount = opCount + chunk->lines[idx++];
     }
 
-    return idx;
+    return idx + chunk->firstLine - 1;
 }
