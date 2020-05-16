@@ -1,0 +1,9 @@
+fun f() {
+  while (true) {
+    let i = "i";
+    return i;
+  }
+}
+
+print f();
+// expect: i

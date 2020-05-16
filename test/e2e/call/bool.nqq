@@ -1,7 +1,0 @@
-print true;
-true();
-
-/* === START OUTPUT ===
-true
-<RUNTIME ERROR>
-=== STOP OUTPUT === */

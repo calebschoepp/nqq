@@ -1,0 +1,25 @@
+let f;
+
+fun f1() {
+  let a = "a";
+  fun f2() {
+    let b = "b";
+    fun f3() {
+      let c = "c";
+      fun f4() {
+        print a;
+        print b;
+        print c;
+      }
+      f = f4;
+    }
+    f3();
+  }
+  f2();
+}
+f1();
+
+f();
+// expect: a
+// expect: b
+// expect: c

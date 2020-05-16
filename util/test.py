@@ -1,277 +1,435 @@
-import os
-import subprocess
-import sys
-import time
+#!./util/env/bin/python3
+
+from __future__ import print_function
+
+from collections import defaultdict
+from os import listdir
+from os.path import abspath, basename, dirname, isdir, isfile, join, realpath, relpath, splitext
 import re
+from subprocess import Popen, PIPE
+import sys
 
-# TODO add support for error templating
-# TODO fix bug where errors show up before output diff
-# TODO add a whole boat load more tests
+import term
 
-class TestRunner():
-    """
-    TestRunner handles finding all of the test suites, executing them, and
-    displaying/summarizing their results.
-    """
-    def __init__(self, test_dir, verbose):
-        self.test_dir = test_dir
-        self.verbose = verbose
-        self.suites = {}
+# Runs the tests.
+REPO_DIR = dirname(dirname(realpath(__file__)))
 
-    def run(self):
-        self._test()
-        self._summarize()
+OUTPUT_EXPECT = re.compile(r'// expect: ?(.*)')
+ERROR_EXPECT = re.compile(r'// (Error.*)')
+ERROR_LINE_EXPECT = re.compile(r'// \[((java|c) )?line (\d+)\] (Error.*)')
+RUNTIME_ERROR_EXPECT = re.compile(r'// expect runtime error: (.+)')
+SYNTAX_ERROR_RE = re.compile(r'\[.*line (\d+)\] (Error.+)')
+STACK_TRACE_RE = re.compile(r'\[line (\d+)\]')
+NONTEST_RE = re.compile(r'// nontest')
+
+passed = 0
+failed = 0
+num_skipped = 0
+expectations = 0
+
+interpreter = None
+filter_path = None
+
+INTERPRETERS = {}
+SUITES = []
+
+class Interpreter:
+  def __init__(self, name, language, args, tests):
+    self.name = name
+    self.language = language
+    self.args = args
+    self.tests = tests
 
 
-    def _test(self):
-        for dirpath, dirnames, filenames in os.walk(self.test_dir):
-            # Is not a leaf of the directory tree
-            if len(filenames) == 0:
-                continue
+def c_interpreter(name, tests):
+  path = name
 
-            # Run the test suite and record the summary to display later
-            suite = TestSuite(dirpath, filenames)
-            suite.run()
-            self.suites[dirpath] = suite
+  INTERPRETERS[name] = Interpreter(name, 'c', [path], tests)
+  SUITES.append(name)
 
-            if self.verbose:
-                for out in suite.all_outputs:
-                    print(out, end='')
-            else:
-                for out in suite.failure_outputs:
-                    print(out,end='')
+c_interpreter('nqq', {
+  'test': 'pass',
 
-    def _summarize(self):
-        total_failures = 0
-        total_tests = 0
-        total_time = 0.0
-        print("=== SUMMARY ===")
-        for k, v in self.suites.items():
-            total_failures += v.failure_count
-            total_tests += v.test_count
-            total_time += v.run_time
-            suite_summary = []
-            if v.failure_count == 0:
-                suite_summary.append(ColorPrinter.okgreen("PASS"))
-            else:
-                suite_summary.append(ColorPrinter.fail("FAIL"))
-            suite_summary.append(k)
-            suite_summary.append(f"({v.run_time:2.3f} s)")
+  # These are just for earlier chapters.
+  'test/scanning': 'skip',
+  'test/expressions': 'skip',
 
-            print("  ".join(suite_summary))
+  # No closures.
+  'test/closure': 'skip',
+  'test/for/closure_in_body.nqq': 'skip',
+  'test/for/return_closure.nqq': 'skip',
+  'test/function/local_recursion.nqq': 'skip',
+  'test/limit/too_many_upvalues.nqq': 'skip',
+  'test/regression/40.nqq': 'skip',
+  'test/while/closure_in_body.nqq': 'skip',
+  'test/while/return_closure.nqq': 'skip',
 
-        print()
-        runner_summary = []
-        if total_failures == 0:
-            runner_summary.append(ColorPrinter.okgreen("PASS"))
+  # No classes.
+  'test/assignment/to_this.nqq': 'skip',
+  'test/call/object.nqq': 'skip',
+  'test/class': 'skip',
+  'test/constructor': 'skip',
+  'test/field': 'skip',
+  'test/inheritance': 'skip',
+  'test/method': 'skip',
+  'test/number/decimal_point_at_eof.nqq': 'skip',
+  'test/number/trailing_dot.nqq': 'skip',
+  'test/operator/equals_class.nqq': 'skip',
+  'test/operator/equals_method.nqq': 'skip',
+  'test/operator/not.nqq': 'skip',
+  'test/operator/not_class.nqq': 'skip',
+  'test/regression/394.nqq': 'skip',
+  'test/return/in_method.nqq': 'skip',
+  'test/super': 'skip',
+  'test/this': 'skip',
+  'test/variable/local_from_method.nqq': 'skip',
+
+  'test/e2e': 'skip',
+  'test/limit': 'skip',
+})
+
+class Test:
+  def __init__(self, path):
+    self.path = path
+    self.output = []
+    self.compile_errors = set()
+    self.runtime_error_line = 0
+    self.runtime_error_message = None
+    self.exit_code = 0
+    self.failures = []
+
+
+  def parse(self):
+    global num_skipped
+    global expectations
+
+    # Get the path components.
+    parts = self.path.split('/')
+    subpath = ""
+    state = None
+
+    # Figure out the state of the test. We don't break out of this loop because
+    # we want lines for more specific paths to override more general ones.
+    for part in parts:
+      if subpath: subpath += '/'
+      subpath += part
+
+      if subpath in interpreter.tests:
+        state = interpreter.tests[subpath]
+
+    if not state:
+      print('Unknown test state for "{}".'.format(self.path))
+    if state == 'skip':
+      num_skipped += 1
+      return False
+    # TODO: State for tests that should be run but are expected to fail?
+
+    line_num = 1
+    with open(self.path, 'r') as file:
+      for line in file:
+        match = OUTPUT_EXPECT.search(line)
+        if match:
+          self.output.append((match.group(1), line_num))
+          expectations += 1
+
+        match = ERROR_EXPECT.search(line)
+        if match:
+          self.compile_errors.add("[{0}] {1}".format(line_num, match.group(1)))
+
+          # If we expect a compile error, it should exit with EX_DATAERR.
+          self.exit_code = 65
+          expectations += 1
+
+        match = ERROR_LINE_EXPECT.search(line)
+        if match:
+          # The two interpreters are slightly different in terms of which
+          # cascaded errors may appear after an initial compile error because
+          # their panic mode recovery is a little different. To handle that,
+          # the tests can indicate if an error line should only appear for a
+          # certain interpreter.
+          language = match.group(2)
+          if not language or language == interpreter.language:
+            self.compile_errors.add("[{0}] {1}".format(
+                match.group(3), match.group(4)))
+
+            # If we expect a compile error, it should exit with EX_DATAERR.
+            self.exit_code = 65
+            expectations += 1
+
+        match = RUNTIME_ERROR_EXPECT.search(line)
+        if match:
+          self.runtime_error_line = line_num
+          self.runtime_error_message = match.group(1)
+          # If we expect a runtime error, it should exit with EX_SOFTWARE.
+          self.exit_code = 70
+          expectations += 1
+
+        match = NONTEST_RE.search(line)
+        if match:
+          # Not a test file at all, so ignore it.
+          return False
+
+        line_num += 1
+
+
+    # If we got here, it's a valid test.
+    return True
+
+
+  def run(self):
+    # Invoke the interpreter and run the test.
+    args = interpreter.args[:]
+    args.append(self.path)
+    proc = Popen(args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+    out, err = proc.communicate()
+    self.validate(proc.returncode, out, err)
+
+
+  def validate(self, exit_code, out, err):
+    if self.compile_errors and self.runtime_error_message:
+      self.fail("Test error: Cannot expect both compile and runtime errors.")
+      return
+
+    try:
+      out = out.decode("utf-8").replace('\r\n', '\n')
+      err = err.decode("utf-8").replace('\r\n', '\n')
+    except:
+      self.fail('Error decoding output.')
+
+    error_lines = err.split('\n')
+
+    # Validate that an expected runtime error occurred.
+    if self.runtime_error_message:
+      self.validate_runtime_error(error_lines)
+    else:
+      self.validate_compile_errors(error_lines)
+
+    self.validate_exit_code(exit_code, error_lines)
+    self.validate_output(out)
+
+
+  def validate_runtime_error(self, error_lines):
+    if len(error_lines) < 2:
+      self.fail('Expected runtime error "{0}" and got none.',
+          self.runtime_error_message)
+      return
+
+    # Skip any compile errors. This can happen if there is a compile error in
+    # a module loaded by the module being tested.
+    line = 0
+    while SYNTAX_ERROR_RE.search(error_lines[line]):
+      line += 1
+
+    if error_lines[line] != self.runtime_error_message:
+      self.fail('Expected runtime error "{0}" and got:',
+          self.runtime_error_message)
+      self.fail(error_lines[line])
+
+    # Make sure the stack trace has the right line. Skip over any lines that
+    # come from builtin libraries.
+    match = False
+    stack_lines = error_lines[line + 1:]
+    for stack_line in stack_lines:
+      match = STACK_TRACE_RE.search(stack_line)
+      if match: break
+
+    if not match:
+      self.fail('Expected stack trace and got:')
+      for stack_line in stack_lines:
+        self.fail(stack_line)
+    else:
+      stack_line = int(match.group(1))
+      if stack_line != self.runtime_error_line:
+        self.fail('Expected runtime error on line {0} but was on line {1}.',
+            self.runtime_error_line, stack_line)
+
+
+  def validate_compile_errors(self, error_lines):
+    # Validate that every compile error was expected.
+    found_errors = set()
+    num_unexpected = 0
+    for line in error_lines:
+      match = SYNTAX_ERROR_RE.search(line)
+      if match:
+        error = "[{0}] {1}".format(match.group(1), match.group(2))
+        if error in self.compile_errors:
+          found_errors.add(error)
         else:
-            runner_summary.append(ColorPrinter.fail("FAIL"))
-        runner_summary.append(f"{total_tests - total_failures} of {total_tests} tests passed")
-        runner_summary.append(f"({total_time:2.3f} s)")
+          if num_unexpected < 10:
+            self.fail('Unexpected error:')
+            self.fail(line)
+          num_unexpected += 1
+      elif line != '':
+        if num_unexpected < 10:
+          self.fail('Unexpected output on stderr:')
+          self.fail(line)
+        num_unexpected += 1
 
-        print("  ".join(runner_summary))
+    if num_unexpected > 10:
+      self.fail('(truncated ' + str(num_unexpected - 10) + ' more...)')
 
-class TestSuite():
-    """
-    TestSuite encompasses the logic to test the multiple test files found in a
-    test suite (a leaf directory). It generates the ouput of the tests but
-    does not put it to stdout, it just stores it.
-    """
-    def __init__(self, dirpath, filenames):
-        self._dirpath = dirpath
-        self._filenames = filenames
-        self.all_outputs = []
-        self.failure_outputs = []
-        self.run_time = 0.0
-        self.test_count = 0
-        self.failure_count = 0
+    # Validate that every expected error occurred.
+    for error in self.compile_errors - found_errors:
+      self.fail('Missing expected error: {0}', error)
 
-    def run(self):
-        start_time = time.time()
 
-        for filename in self._filenames:
-            self._test(filename)
+  def validate_exit_code(self, exit_code, error_lines):
+    if exit_code == self.exit_code: return
 
-        end_time = time.time()
-        self.run_time = end_time - start_time
+    if len(error_lines) > 10:
+      error_lines = error_lines[0:10]
+      error_lines.append('(truncated...)')
+    self.fail('Expected return code {0} and got {1}. Stderr:',
+        self.exit_code, exit_code)
+    self.failures += error_lines
 
-    def _test(self, filename):
-        if self._file_excludable(filename):
-            return
-        self.test_count += 1
-        test = Test(os.path.join(self._dirpath, filename))
-        test.execute()
-        if test.failed:
-            self.failure_outputs.append(test.output)
-            self.failure_count += 1
-        self.all_outputs.append(test.output)
 
-    def _file_excludable(self, filename):
-        if filename.startswith("_"):
-            return True
-        return False
+  def validate_output(self, out):
+    # Remove the trailing last empty line.
+    out_lines = out.split('\n')
+    if out_lines[-1] == '':
+      del out_lines[-1]
 
-# TODO is assuming invariant that no proper output follows errors
-class Test():
-    """
-    Test parses, executes, and evaluates the success of a test given by a
-    filename.
-    """
-    TEST_TIMEOUT = 1
+    index = 0
+    for line in out_lines:
+      if sys.version_info < (3, 0):
+        line = line.encode('utf-8')
 
-    def __init__(self, filename):
-        print(filename)
-        self.filename = filename
-        self.failed = True
-        self.output = ""
-        self.expected = ""
-        self.actual_stdout = ""
-        self.actual_stderr = ""
-        self.actual_stderr_modified = ""
+      if index >= len(self.output):
+        self.fail('Got output "{0}" when none was expected.', line)
+      elif self.output[index][0] != line:
+        self.fail('Expected output "{0}" on line {1} and got "{2}".',
+            self.output[index][0], self.output[index][1], line)
+      index += 1
 
-    def execute(self):
-        self.parse_expected()
-        self.get_actual()
-        self.modify_actual_std_err()
-        self.diff()
-        if self.failed:
-            self.build_fail_output()
-        else:
-            self.build_pass_output()
+    while index < len(self.output):
+      self.fail('Missing expected output "{0}" on line {1}.',
+          self.output[index][0], self.output[index][1])
+      index += 1
 
-    def parse_expected(self):
-        output_list = []
-        with open(self.filename, 'r') as f:
-            at_output = False
-            for line in f.readlines():
-                if line == "/* === START OUTPUT ===\n":
-                    at_output = True
-                    continue
-                elif line in ["=== STOP OUTPUT === */\n", "=== STOP OUTPUT === */"]:
-                    break
-                elif at_output:
-                    output_list.append(line)
 
-        self.expected = "".join(output_list)
+  def fail(self, message, *args):
+    if args:
+      message = message.format(*args)
+    self.failures.append(message)
 
-    def get_actual(self):
-        args = ("./nqq", self.filename)
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        try:
-            popen.wait(timeout=self.TEST_TIMEOUT)
-        except subprocess.TimeoutExpired:
-            self.actual_stderr = "<TEST TIMEOUT>\n"
-            return
 
-        self.actual_stdout = popen.stdout.read().decode("utf-8")
-        self.actual_stderr = popen.stderr.read().decode("utf-8")
+def walk(dir, callback):
+  """
+  Walks [dir], and executes [callback] on each file.
+  """
 
-    def modify_actual_std_err(self):
-        i = 0
-        while i < len(self.actual_stderr):
-            search = re.search(r"\[line (\d)*\] Error at", self.actual_stderr[i:])
-            if search is not None and search.span()[0] == 0:
-                self.actual_stderr_modified += "<COMPILE ERROR>\n"
-                x = 0
-                while i < len(self.actual_stderr) and self.actual_stderr_modified[x] != '\n':
-                    i += 1
-                    x += 1
-                continue
-            # There is still error text and it isn't a compile error so must be runtime
-            search = re.search(r"(.*)\n\[line (\d)*\] in", self.actual_stderr[i:])
-            if search is not None and search.span()[0] == 0:
-                self.actual_stderr_modified += "<RUNTIME ERROR>\n"
-                x = 0
-                while i < len(self.actual_stderr) and self.actual_stderr_modified[x] != '\n':
-                    i += 1
-                    x += 1
-                continue
-            else:
-                i += 1
+  dir = abspath(dir)
+  for file in listdir(dir):
+    nfile = join(dir, file)
+    if isdir(nfile):
+      walk(nfile, callback)
+    else:
+      callback(nfile)
 
-    def diff(self):
-        print('--------------------------------------------------------')
-        print(f"stdout: {self.actual_stdout}")
-        print(f"stderr: {self.actual_stderr}")
-        print(f"stderr mod: {self.actual_stderr_modified}")
-        print(f"expected: {self.expected}")
-        i = 0
-        while i < min(len(self.actual_stdout), len(self.expected)):
-            if self.actual_stdout[i] != self.expected[i]:
-                self.failed = True
-                print(2)
-                return
-            i += 1
 
-        if i != len(self.actual_stdout) and i == len(self.expected):
-            self.failed = True
-            print(3)
-            return
+def run_script(path):
+  if "benchmark" in path: return
 
-        if i == len(self.actual_stdout) and i == len(self.expected):
-            self.failed = False
-            print(4)
-            return
+  global passed
+  global failed
+  global num_skipped
 
-        # No more stdout but expecting more at this point, compare errors
-        j = 0
-        while j < min(len(self.actual_stderr_modified), len(self.expected) - i):
-            if self.actual_stderr_modified[j] != self.expected[i + j]:
-                self.failed = True
-                print(5)
-                return
-            j += 1
+  if (splitext(path)[1] != '.nqq'):
+    return
 
-        self.failed = False
+  # Check if we are just running a subset of the tests.
+  if filter_path:
+    this_test = relpath(path, join(REPO_DIR, 'test'))
+    if not this_test.startswith(filter_path):
+      return
 
-    def build_pass_output(self):
-        self.output = f"{ColorPrinter.okgreen('PASS')}  {self.filename}\n"
+  # Make a nice short path relative to the working directory.
 
-    def build_fail_output(self):
-        temp_output = []
-        temp_output.append(f"{ColorPrinter.fail('FAIL')}  {self.filename}\n")
-        temp_output.append(ColorPrinter.warning("<<<<<<< Expected Output\n"))
-        temp_output.append(ColorPrinter.warning(self.expected))
-        temp_output.append(ColorPrinter.warning("=======\n"))
-        temp_output.append(ColorPrinter.warning(self.actual_stdout))
-        temp_output.append(ColorPrinter.warning(self.actual_stderr_modified))
-        temp_output.append(ColorPrinter.warning(">>>>>>> Actual Output\n"))
+  # Normalize it to use "/" since, among other things, the interpreters expect
+  # the argument to use that.
+  path = relpath(path).replace("\\", "/")
 
-        self.output = ColorPrinter.warning("".join(temp_output))
+  # Update the status line.
+  term.print_line('Passed: {} Failed: {} Skipped: {} {}'.format(
+      term.green(passed),
+      term.red(failed),
+      term.yellow(num_skipped),
+      term.gray('({})'.format(path))))
 
-class ColorPrinter():
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+  # Read the test and parse out the expectations.
+  test = Test(path)
 
-    @classmethod
-    def fail(cls, s):
-        return cls.FAIL + s + cls.ENDC
+  if not test.parse():
+    # It's a skipped or non-test file.
+    return
 
-    @classmethod
-    def warning(cls, s):
-        return cls.WARNING + s + cls.ENDC
+  test.run()
 
-    @classmethod
-    def okgreen(cls, s):
-        return cls.OKGREEN + s + cls.ENDC
+  # Display the results.
+  if len(test.failures) == 0:
+    passed += 1
+  else:
+    failed += 1
+    term.print_line(term.red('FAIL') + ': ' + path)
+    print('')
+    for failure in test.failures:
+      print('      ' + term.pink(failure))
+    print('')
 
-if __name__ == "__main__":
-    # Check that current working directory is correct
-    if os.path.basename(os.getcwd()) != "nqq":
-        print("End to end tests must be run from root directory.")
-        exit()
 
-    verbose = False
-    if len(sys.argv) == 2 and sys.argv[1] in ['-v', '--verbose']:
-        verbose = True
+def run_suite(name):
+  global interpreter
+  global passed
+  global failed
+  global num_skipped
+  global expectations
 
-    test_dir = os.path.join('test', 'e2e')
+  interpreter = INTERPRETERS[name]
 
-    runner = TestRunner(test_dir, verbose)
-    runner.run()
+  passed = 0
+  failed = 0
+  num_skipped = 0
+  expectations = 0
+
+  walk(join(REPO_DIR, 'test'), run_script)
+  term.print_line()
+
+  if failed == 0:
+    print('All {} tests passed ({} expectations).'.format(
+        term.green(passed), str(expectations)))
+  else:
+    print('{} tests passed. {} tests failed.'.format(
+        term.green(passed), term.red(failed)))
+
+  return failed == 0
+
+
+def run_suites(names):
+  any_failed = False
+  for name in names:
+    print('=== {} ==='.format(name))
+    if not run_suite(name):
+      any_failed = True
+
+  if any_failed:
+    sys.exit(1)
+
+
+def main(argv):
+  global filter_path
+
+  if len(argv) < 1 or len(argv) > 2:
+    print('Usage: test.py [filter]')
+    sys.exit(1)
+
+  if len(argv) == 2:
+    filter_path = argv[1]
+
+  run_suites(SUITES)
+
+
+
+if __name__ == '__main__':
+  main(sys.argv)

@@ -1,0 +1,3 @@
+let a = "value";
+let a = a;
+print a; // expect: value

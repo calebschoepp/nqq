@@ -56,11 +56,7 @@ clean:
 
 .PHONY: test
 test:
-	@ python3 util/test.py
-
-.PHONY: test-verbose
-test-verbose:
-	@ python3 util/test.py --verbose
+	@ python3 util/test.py 
 
 # Build targets ---------------------------------------------------------------
 
