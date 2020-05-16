@@ -1,5 +1,8 @@
 #!./util/env/bin/python3
 
+# TODO take spacing from 2 -> 4
+# TODO add benchmark.py infra
+
 from collections import defaultdict
 from os import listdir
 from os.path import abspath, basename, dirname, isdir, isfile, join, realpath, relpath, splitext
@@ -28,24 +31,19 @@ expectations = 0
 interpreter = None
 filter_path = None
 
-INTERPRETERS = {}
-SUITES = []
+SUITES = {}
 
 class Interpreter:
-  def __init__(self, name, language, args, tests):
+  def __init__(self, name, args, tests):
     self.name = name
-    self.language = language
     self.args = args
     self.tests = tests
 
 
-def c_interpreter(name, tests):
-  path = 'nqq'
+def add_suite(name, tests):
+  SUITES[name] = Interpreter(name, ['nqq'], tests)
 
-  INTERPRETERS[name] = Interpreter(name, 'c', [path], tests)
-  SUITES.append(name)
-
-c_interpreter('All Tests', {
+add_suite('All Tests', {
   'test': 'pass',
 
   # No closures.
@@ -370,7 +368,7 @@ def run_suite(name):
   global num_skipped
   global expectations
 
-  interpreter = INTERPRETERS[name]
+  interpreter = SUITES[name]
 
   passed = 0
   failed = 0
@@ -411,8 +409,7 @@ def main(argv):
   if len(argv) == 2:
     filter_path = argv[1]
 
-  run_suites(SUITES)
-
+  run_suites(SUITES.keys())
 
 
 if __name__ == '__main__':
