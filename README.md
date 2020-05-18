@@ -27,3 +27,6 @@ C implementation of nqq (modified implementation of clox)
 - Build a end to end testing frameworks
 - Build a benchmarking framework
 - Decide on wide semantics
+- Optional parameters
+- Variabl parameters
+- Patter matching

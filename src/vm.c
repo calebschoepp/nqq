@@ -16,6 +16,29 @@ static Value clockNative(int argCount, Value* args) {
     return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+static Value inputNative(int argCount, Value* args) {
+    int count = 0;
+    int capacity = GROW_CAPACITY(0);
+    char* input = NULL;
+    input = GROW_ARRAY(input, char, 0, capacity);
+
+    // Read in characters until we read 'enter'
+    do {
+        if (capacity < count + 1) {
+            int oldCapacity = capacity;
+            capacity = GROW_CAPACITY(oldCapacity);
+            input = GROW_ARRAY(input, char, oldCapacity, capacity);
+        }
+        // Convoluted (void) and +1 to make compiler ignore return value
+        (void)(scanf("%c", &input[count++])+1);
+    } while (input[count - 1] != 0x0A);
+
+    Value value = OBJ_VAL(copyString(input, count - 1));
+    FREE_ARRAY(char, input, count);
+    return value;
+}
+
+
 static void resetStack() {
     vm.stackTop = vm.stack;
     vm.frameCount = 0;
@@ -65,6 +88,7 @@ void initVM() {
     initTable(&vm.strings);
 
     defineNative("clock", clockNative);
+    defineNative("input", inputNative);
 }
 
 void freeVM() {

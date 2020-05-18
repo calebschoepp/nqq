@@ -1,6 +1,5 @@
 #!./util/env/bin/python3
 
-# TODO take spacing from 2 -> 4
 # TODO add benchmark.py infra
 
 from collections import defaultdict
