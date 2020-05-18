@@ -7,10 +7,10 @@
 
 #define FRAMES_MAX 64
 #define STACK_MAX 65536
-// TODO dynamically grow stack or throw stack overflow error
+// TODO tune stack and frame limits
 
 typedef struct {
-    ObjFunction* function;
+    ObjClosure* closure;
     uint8_t* ip;
     Value* slots;
 } CallFrame;
@@ -24,10 +24,12 @@ typedef struct {
     CallFrame frames[FRAMES_MAX];
     int frameCount;
 
-    Value stack[STACK_MAX];
+    Value stack[STACK_MAX]; // TODO dynamically grow stack/throw stack overflow error
     Value* stackTop;
     Table globals;
     Table strings;
+    ObjUpvalue* openUpvalues;
+
     uint8_t nextOpWide;
 
     Obj* objects;

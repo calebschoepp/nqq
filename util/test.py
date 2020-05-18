@@ -46,17 +46,8 @@ def add_suite(name, tests):
 add_suite('All Tests', {
   'test': 'pass',
 
-  # No closures.
-  'test/closure': 'skip',
-  'test/for/closure_in_body.nqq': 'skip',
-  'test/for/return_closure.nqq': 'skip',
-  'test/function/local_recursion.nqq': 'skip',
-  'test/limit/too_many_upvalues.nqq': 'skip',
-  'test/regression/40.nqq': 'skip',
-  'test/while/closure_in_body.nqq': 'skip',
-  'test/while/return_closure.nqq': 'skip',
-
   # No classes.
+  'test/closure/close_over_method_parameter.nqq': 'skip',
   'test/assignment/to_this.nqq': 'skip',
   'test/call/object.nqq': 'skip',
   'test/class': 'skip',
