@@ -26,3 +26,4 @@ C implementation of nqq (modified implementation of clox)
 - Assert (Make my debugging life way easier)
 - Build a end to end testing frameworks
 - Build a benchmarking framework
+- Decide on wide semantics
