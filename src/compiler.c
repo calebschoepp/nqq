@@ -494,12 +494,6 @@ static void ifStatement() {
     patchJump(elseJump);
 }
 
-static void printStatement() {
-    expression();
-    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
-    emitByte(OP_PRINT);
-}
-
 static void returnStatement() {
     if (current->type == TYPE_SCRIPT) {
         error("Cannot return from top-level code.");
@@ -545,7 +539,6 @@ static void synchronize() {
         case TOKEN_FOR:
         case TOKEN_IF:
         case TOKEN_WHILE:
-        case TOKEN_PRINT:
         case TOKEN_RETURN:
             return;
 
@@ -571,9 +564,7 @@ static void declaration() {
 }
 
 static void statement() {
-    if (match(TOKEN_PRINT)) {
-        printStatement();
-    } else if (match(TOKEN_FOR)) {
+    if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
@@ -681,6 +672,7 @@ static void unary(bool canAssign) {
 }
 
 ParseRule rules[] = {
+    // Prefix   Infix    Precedence
     { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
@@ -713,7 +705,6 @@ ParseRule rules[] = {
     { NULL,     NULL,    PREC_NONE },       // TOKEN_LET
     { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
     { NULL,     or_,     PREC_OR },       // TOKEN_OR
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_PRINT
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
     { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS

@@ -3,7 +3,7 @@ let f;
 class Foo {
   method(param) {
     fun f_() {
-      print param;
+      print(param);
     }
     f = f_;
   }

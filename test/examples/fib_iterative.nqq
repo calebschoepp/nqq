@@ -10,4 +10,4 @@ for (let i = 0; i < 14; i = i + 1) {
     b = c;
 }
 
-print a; // expect: 377
+print(a); // expect: 377

@@ -1,7 +1,7 @@
 fun f() {
   for (;;) {
     let i = "i";
-    fun g() { print i; }
+    fun g() { print(i); }
     return g;
   }
 }

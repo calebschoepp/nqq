@@ -12,33 +12,6 @@
 
 VM vm; // TODO pass as pointer to all functions instead of being static
 
-static Value clockNative(int argCount, Value* args) {
-    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
-}
-
-static Value inputNative(int argCount, Value* args) {
-    int count = 0;
-    int capacity = GROW_CAPACITY(0);
-    char* input = NULL;
-    input = GROW_ARRAY(input, char, 0, capacity);
-
-    // Read in characters until we read 'enter'
-    do {
-        if (capacity < count + 1) {
-            int oldCapacity = capacity;
-            capacity = GROW_CAPACITY(oldCapacity);
-            input = GROW_ARRAY(input, char, oldCapacity, capacity);
-        }
-        // Convoluted (void) and +1 to make compiler ignore return value
-        (void)(scanf("%c", &input[count++])+1);
-    } while (input[count - 1] != 0x0A);
-
-    Value value = OBJ_VAL(copyString(input, count - 1));
-    FREE_ARRAY(char, input, count);
-    return value;
-}
-
-
 static void resetStack() {
     vm.stackTop = vm.stack;
     vm.frameCount = 0;
@@ -70,6 +43,68 @@ static void runtimeError(const char* format, ...) {
     resetStack();
 }
 
+static bool clockNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return a double representing the number of seconds the process has been alive
+    if (argCount != 0) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "clock expected 0 arguments but got %d.", argCount);
+        return true;
+    }
+    *result = NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+    return false;
+}
+
+static bool inputNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return a string representing a line read from STDIN
+    if (argCount != 0) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "input expected 0 arguments but got %d.", argCount);
+        return true;
+    }
+    int count = 0;
+    int capacity = GROW_CAPACITY(0);
+    char* input = NULL;
+    input = GROW_ARRAY(input, char, 0, capacity);
+
+    // Read in characters until we read 'enter'
+    do {
+        if (capacity < count + 1) {
+            int oldCapacity = capacity;
+            capacity = GROW_CAPACITY(oldCapacity);
+            input = GROW_ARRAY(input, char, oldCapacity, capacity);
+        }
+        // Convoluted (void) and +1 to make compiler ignore return value
+        (void)(scanf("%c", &input[count++])+1);
+    } while (input[count - 1] != 0x0A);
+
+    *result = OBJ_VAL(copyString(input, count - 1));
+    FREE_ARRAY(char, input, count);
+    return false;
+}
+
+static bool printNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    if (argCount != 1) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "print expected 1 argument but got %d.", argCount);
+        return true;
+    }
+    printValue(*args);
+    printf("\n");
+    *result = NIL_VAL;
+    return false;
+}
+
+static bool writeNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    if (argCount != 1) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "println expected 0 argument but got %d.", argCount);
+        return true;
+    }
+    printValue(*args);
+    *result = NIL_VAL;
+    return false;
+}
+
 static void defineNative(const char* name, NativeFn function) {
     push(OBJ_VAL(copyString(name, (int)strlen(name))));
     push(OBJ_VAL(newNative(function)));
@@ -89,6 +124,8 @@ void initVM() {
 
     defineNative("clock", clockNative);
     defineNative("input", inputNative);
+    defineNative("print", printNative);
+    defineNative("write", writeNative);
 }
 
 void freeVM() {
@@ -137,7 +174,13 @@ static bool callValue(Value callee, int argCount) {
                 return call(AS_CLOSURE(callee), argCount);
             case OBJ_NATIVE: {
                 NativeFn native = AS_NATIVE(callee);
-                Value result = native(argCount, vm.stackTop - argCount);
+                Value result;
+                char errMsg[50];
+                bool err = native(argCount, vm.stackTop - argCount, &result, errMsg);
+                if (err) {
+                    runtimeError(errMsg);
+                    return false;
+                }
                 vm.stackTop -= argCount + 1;
                 push(result);
                 return true;
@@ -369,10 +412,6 @@ static InterpretResult run() {
             }
 
             push(NUMBER_VAL(-AS_NUMBER(pop())));
-            break;
-        case OP_PRINT:
-            printValue(pop());
-            printf("\n");
             break;
         case OP_JUMP: {
             uint16_t offset = READ_SHORT();

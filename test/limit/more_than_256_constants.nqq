@@ -34,7 +34,7 @@ fun f() {
 
   1;
 
-  print "this is fine";
+  print("this is fine");
 }
 
 f(); // expect: this is fine
