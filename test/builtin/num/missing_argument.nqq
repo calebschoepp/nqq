@@ -1,0 +1,1 @@
+num(); // expect runtime error: num expected 1 argument but got 0.

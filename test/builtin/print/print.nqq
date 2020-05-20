@@ -1,0 +1,3 @@
+print("Hello World"); // expect: Hello World
+write("Hi");
+write(" There"); // expect: Hi There

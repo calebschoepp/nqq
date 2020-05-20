@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -43,6 +44,10 @@ static void runtimeError(const char* format, ...) {
     resetStack();
 }
 
+static bool isFalsey(Value value) {
+    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 static bool clockNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Return a double representing the number of seconds the process has been alive
     if (argCount != 0) {
@@ -80,6 +85,41 @@ static bool inputNative(int argCount, Value* args, Value* result, char errMsg[])
     *result = OBJ_VAL(copyString(input, count - 1));
     FREE_ARRAY(char, input, count);
     return false;
+}
+
+static bool numNative(int argCount, Value* args, Value* result, char errMsg[]) {
+        if (argCount != 1) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "num expected 1 argument but got %d.", argCount);
+        return true;
+    }
+    Value value = *args;
+    if (IS_BOOL(value)) {
+        if (isFalsey(value)) {
+            *result = NUMBER_VAL(0);
+        } else {
+            *result = NUMBER_VAL(1);
+        }
+        return false;
+    } if (IS_NUMBER(value)) {
+        *result = value;
+        return false;
+    } if (IS_STRING(value)) {
+        char* err;
+        char* numString = AS_CSTRING(value);
+        double number = strtod(numString, &err);
+        if (*err != 0) {
+            *result = NIL_VAL;
+            sprintf(errMsg, "Cannot convert '%s' to a number.", numString);
+            return true;
+        }
+        *result = NUMBER_VAL(number);
+        return false;
+    }
+    // Should be unreachable down here
+    *result = NIL_VAL;
+    sprintf(errMsg, "num was passed an unexpected type.");
+    return true;
 }
 
 static bool printNative(int argCount, Value* args, Value* result, char errMsg[]) {
@@ -124,6 +164,7 @@ void initVM() {
 
     defineNative("clock", clockNative);
     defineNative("input", inputNative);
+    defineNative("num", numNative);
     defineNative("print", printNative);
     defineNative("write", writeNative);
 }
@@ -225,10 +266,6 @@ static void closeUpvalues(Value* last) {
         upvalue->location = &upvalue->closed;
         vm.openUpvalues = upvalue->next;
     }
-}
-
-static bool isFalsey(Value value) {
-    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
 static void concatenate() {
