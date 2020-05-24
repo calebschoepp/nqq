@@ -29,6 +29,7 @@ typedef enum {
 // Base type all nqq objects inherit from
 struct sObj {
     ObjType type;
+    bool isMarked;
     struct sObj* next;
 };
 

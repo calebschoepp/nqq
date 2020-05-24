@@ -65,8 +65,7 @@ typedef struct Compiler {
     ObjFunction* function;
     FunctionType type;
 
-
-    Local* locals;
+    Local* locals;  // TODO verify locals are properly garbage collected
     int localCount;
     int localCapacity;
     Upvalue upvalues[UINT8_COUNT];
@@ -892,4 +891,12 @@ ObjFunction* compile(const char* source) {
 
     ObjFunction* function = endCompiler();
     return parser.hadError ? NULL : function;
+}
+
+void markCompilerRoots() {
+    Compiler* compiler = current;
+    while (compiler != NULL) {
+        markObject((Obj*)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }

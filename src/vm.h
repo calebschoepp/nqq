@@ -32,7 +32,13 @@ typedef struct {
 
     uint8_t nextOpWide;
 
+    size_t bytesAllocated;
+    size_t nextGC;
+
     Obj* objects;
+    int grayCount;
+    int grayCapacity;
+    Obj** grayStack;
 } VM;
 
 typedef enum {
