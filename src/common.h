@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// TODO don't hardcode an undefined DEBUG here
 #ifdef DEBUG
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
