@@ -532,7 +532,6 @@ static void synchronize() {
         if (parser.previous.type == TOKEN_SEMICOLON) return;
 
         switch (parser.current.type) {
-        case TOKEN_CLASS:
         case TOKEN_FUN:
         case TOKEN_LET:
         case TOKEN_FOR:
@@ -695,7 +694,6 @@ ParseRule rules[] = {
     { string,   NULL,    PREC_NONE },       // TOKEN_STRING
     { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
     { NULL,     and_,    PREC_AND },       // TOKEN_AND
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
     { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
@@ -705,7 +703,6 @@ ParseRule rules[] = {
     { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
     { NULL,     or_,     PREC_OR },       // TOKEN_OR
     { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_SUPER
     { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
     { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
     { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE

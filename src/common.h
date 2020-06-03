@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 // TODO don't hardcode an undefined DEBUG here
+// TODO add individual debug flags for debug output. Don't always want GC
 #ifdef DEBUG
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
