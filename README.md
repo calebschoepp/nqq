@@ -22,12 +22,27 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Implicit semi-colons
 - [x] Print as a function
 - [ ] Modulo operator
-- [ ] Bitwise operator
+- [ ] Bitwise operators
 - [ ] Assert (Make my debugging life way easier)
-- [ ] Build a end to end testing frameworks
+- [x] Build an end to end testing frameworks
 - [ ] Build a benchmarking framework
 - [ ] Decide on wide semantics
 - [ ] Optional parameters
 - [ ] Variabl parameters
-- [ ] Patter matching
+- [ ] Pattern matching
 - [ ] Int type
+
+# Builtins to add
+- [ ] Std I/O
+- [ ] File I/O
+- [ ] Time
+- [ ] Client networking
+- [ ] Server networking
+- [ ] Basic type conversions
+- [ ] Basic type "methods"
+
+# Packages to boostrap
+- [ ] Requests
+- [ ] HTTP server
+- [ ] Regex
+- [ ] Testing
