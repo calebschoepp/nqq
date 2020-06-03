@@ -45,27 +45,6 @@ def add_suite(name, tests):
 
 add_suite('All Tests', {
     'test': 'pass',
-
-    # No classes.
-    'test/closure/close_over_method_parameter.nqq': 'skip',
-    'test/assignment/to_this.nqq': 'skip',
-    'test/call/object.nqq': 'skip',
-    'test/class': 'skip',
-    'test/constructor': 'skip',
-    'test/field': 'skip',
-    'test/inheritance': 'skip',
-    'test/method': 'skip',
-    'test/number/decimal_point_at_eof.nqq': 'skip',
-    'test/number/trailing_dot.nqq': 'skip',
-    'test/operator/equals_class.nqq': 'skip',
-    'test/operator/equals_method.nqq': 'skip',
-    'test/operator/not.nqq': 'skip',
-    'test/operator/not_class.nqq': 'skip',
-    'test/regression/394.nqq': 'skip',
-    'test/return/in_method.nqq': 'skip',
-    'test/super': 'skip',
-    'test/this': 'skip',
-    'test/variable/local_from_method.nqq': 'skip',
 })
 
 class Test:
