@@ -2,7 +2,8 @@
 C implementation of nqq (modified implementation of clox)
 
 # Features to add
-- [ ] Escape sequences in strings
+- [ ] Escape sequences in stringsj
+- [ ] Struct type
 - [ ] String interpolation
 - [ ] Ternary operator
 - [ ] Explicit multi-line strings
@@ -46,3 +47,6 @@ C implementation of nqq (modified implementation of clox)
 - [ ] HTTP server
 - [ ] Regex
 - [ ] Testing
+
+
+NEXT: Add benchmarks
