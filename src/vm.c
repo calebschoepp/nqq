@@ -48,6 +48,22 @@ static bool isFalsey(Value value) {
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
+static bool assertNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Throw a runtime error if the argument does not evaluate to true
+    if (argCount != 1) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "assert expected 1 argument but got %d.", argCount);
+        return true;
+    }
+    Value value = *args;
+    if (isFalsey(value)) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "failed assertion.");
+        return true;
+    }
+    return false;
+}
+
 static bool clockNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Return a double representing the number of seconds the process has been alive
     if (argCount != 0) {
@@ -168,6 +184,7 @@ void initVM() {
     initTable(&vm.globals);
     initTable(&vm.strings);
 
+    defineNative("assert", assertNative);
     defineNative("clock", clockNative);
     defineNative("input", inputNative);
     defineNative("num", numNative);

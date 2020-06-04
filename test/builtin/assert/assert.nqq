@@ -1,0 +1,5 @@
+assert(true);
+assert(false or 1 + 1 == 2);
+let x = true;
+assert(true and x);
+assert(false); // expect runtime error: failed assertion.

@@ -1,6 +1,5 @@
 #!./util/env/bin/python3
 
-# TODO add benchmark.py infra
 # TOOD fix weird test output when terminal is in default size
 
 from collections import defaultdict
