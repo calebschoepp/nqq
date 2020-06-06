@@ -2,11 +2,11 @@
 C implementation of nqq (modified implementation of clox)
 
 # Features to add
-- [ ] Escape sequences in strings
-- [ ] Struct type
+- [x] Escape sequences in strings
+- [ ] Struct type?
 - [ ] String interpolation
-- [ ] Ternary operator
-- [ ] Explicit multi-line strings
+- [ ] Ternary operator?
+- [x] Explicit multi-line strings
 - [ ] Lists
 - [ ] Maps
 - [ ] Sets
@@ -14,16 +14,16 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Modules
 - [ ] Break statement
 - [ ] Continue statement
-- [ ] Lambdas
+- [ ] Lambdas i.e. anonymous functions
 - [ ] Comprehensions
-- [x] Multi-line comments (DONE)
+- [x] Multi-line comments
 - [ ] Postfix/prefix increment/decrement
 - [ ] Exponent operator
 - [ ] Short hand assignment operators
 - [ ] Implicit semi-colons
 - [x] Print as a function
 - [ ] Modulo operator
-- [ ] Bitwise operators
+- [ ] Bitwise operators?
 - [x] Assert (Make my debugging life way easier)
 - [x] Build an end to end testing frameworks
 - [ ] Build a benchmarking framework
@@ -31,7 +31,7 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Optional parameters
 - [ ] Variable parameters
 - [ ] Pattern matching
-- [ ] Int type
+- [ ] Int type?
 
 # Builtins to add
 - [ ] Std I/O
@@ -74,5 +74,15 @@ let multiline = 'both basic and template strings can run multiple lines via \
     editor. Convention is to make the following lines tab in a level.'
 let raw = `(this is a raw string)*\n where chars are interpreted directly`;
 
-// Supported escape sequences
+# Supported escape sequences
 "\n \t \' \" \\"
+
+# String interpolation
+let numCats = input();
+let favCatName = input();
+print("I have ${numCats} in total, and my favorite cat is named ${favCatName}.");
+print("I have " + str(numCats) + " in total, and my favorite cat is named " + favCatName + ".");
+
+- I currently have no easy way to support something beyond referencing variables in string interpolation
+- Without supporting expressions in string interpolation it really isn't much better than string concatenation
+- I will push this feature out for awhile

@@ -557,7 +557,6 @@ static InterpretResult run() {
 }
 
 InterpretResult interpret(const char* source) {
-    // printf("vm %ld\n", sizeof(vm)); TODO remove this
     ObjFunction* function = compile(source);
     if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
