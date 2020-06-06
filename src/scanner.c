@@ -182,18 +182,27 @@ static Token number() {
     return makeToken(TOKEN_NUMBER);
 }
 
-static Token string() {
+static Token templateString() {
     // TODO decide on multiline string behavior
-    while (peek() != '"' && !isAtEnd()) {
-        if (peek() == '\n') scanner.line++;
+    while (peek() != '"' && peek() != '\n' && !isAtEnd()) {
+        if (peek() == '\n') {
+            scanner.line++;
+        } else if (peek() == '\\' && peekNext() == '\"') {
+            advance();
+        } else if (peek() == '\\' && peekNext() == '\n') {
+            advance();
+            scanner.line++;
+        } else if (peek() == '\\' && peekNext() == '\\') {
+            advance();
+        }
         advance();
     }
 
-    if (isAtEnd()) return errorToken("Unterminated string.");
+    if (isAtEnd()) return errorToken("Unterminated template string.");
 
     // The closing quote.
     advance();
-    return makeToken(TOKEN_STRING);
+    return makeToken(TOKEN_TEMPLATE_STRING);
 }
 
 Token scanToken() {
@@ -228,7 +237,7 @@ Token scanToken() {
             return makeToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
         case '>':
             return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
-        case '"': return string();
+        case '"': return templateString();
     }
 
     return errorToken("Unexpected character.");

@@ -74,5 +74,5 @@ let multiline = 'both basic and template strings can run multiple lines via \
     editor. Convention is to make the following lines tab in a level.'
 let raw = `(this is a raw string)*\n where chars are interpreted directly`;
 
-import re;
-re.match(raw, basic);
+// Supported escape sequences
+"\n \t \' \" \\"

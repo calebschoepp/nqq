@@ -1,0 +1,6 @@
+print("\'");   // expect: '
+print("\"");   // expect: "
+print("\t");   // expect: 	
+print("\\");   // expect: \
+
+// TODO newline skipped due to limitations of test framework

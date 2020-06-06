@@ -79,6 +79,7 @@ static uint32_t hashString(const char* key, int length) {
     return hash;
 }
 
+// Copy a string to strings table and take ownership of memory
 ObjString* takeString(char* chars, int length) {
     uint32_t hash = hashString(chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
@@ -89,6 +90,7 @@ ObjString* takeString(char* chars, int length) {
     return allocateString(chars, length, hash);
 }
 
+// Copy a string to strings table without taking ownership of memory
 ObjString* copyString(const char* chars, int length) {
     uint32_t hash = hashString(chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);

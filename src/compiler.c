@@ -609,8 +609,49 @@ static void or_(bool canAssign) {
     patchJump(endJump);
 }
 
-static void string(bool canAssign) {
-    emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
+static void templateString(bool canAssign) {
+    // Template strings can have escape sequences.
+    // Need to scan token chars and build up new string with converted
+    // escape sequences.
+    int tokenLen = parser.previous.length - 2;
+    int realLen = 0;
+
+    char* new = ALLOCATE(char, tokenLen);
+
+    for (int i = 1; i < tokenLen + 1; ++i) {
+        char c = parser.previous.start[i];
+
+        // Can't have escape sequence with only 1 char left
+        if (i < tokenLen && c == '\\') {
+            char next = parser.previous.start[++i];
+            switch (next) {
+                case '\n':
+                    break;
+                case '\\':
+                    new[realLen++] = '\\';
+                    break;
+                case '\'':
+                    new[realLen++] = '\'';
+                    break;
+                case '\"':
+                    new[realLen++] = '\"';
+                    break;
+                case 'n':
+                    new[realLen++] = '\n';
+                    break;
+                case 't':
+                    new[realLen++] = '\t';
+                    break;
+                default:
+                    break;
+            }
+            continue;
+        }
+
+        new[realLen++] = c;
+    }
+    emitConstant(OBJ_VAL(copyString(new, realLen)));
+    FREE(char, new);
 }
 
 static void namedVariable(Token name, bool canAssign) {
@@ -691,7 +732,7 @@ ParseRule rules[] = {
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
     { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
     { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-    { string,   NULL,    PREC_NONE },       // TOKEN_STRING
+    { templateString,  NULL,  PREC_NONE },  // TOKEN_TEMPLATE_STRING
     { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
     { NULL,     and_,    PREC_AND },       // TOKEN_AND
     { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
