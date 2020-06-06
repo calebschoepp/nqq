@@ -1,0 +1,5 @@
+print(`\'`);   // expect: \'
+print(`\"`);   // expect: \"
+print(`\t`);   // expect: \t
+print(`\\`);   // expect: \\
+print(`\n`);   // expect: \n

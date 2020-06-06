@@ -76,6 +76,20 @@ Parser parser;
 
 Compiler* current = NULL;
 
+// Forward declarations to get around recursive nature of grammar
+static void expression();
+static void statement();
+static void declaration();
+static ParseRule* getRule(TokenType type);
+static void parsePrecedence(Precedence precedence);
+static uint16_t identifierConstant(Token* name);
+static uint16_t parseVariable(const char* errorMessage);
+static void defineVariable(uint16_t global);
+static int resolveLocal(Compiler* compiler, Token* name);
+static void markInitialized();
+static uint8_t argumentList();
+static int resolveUpvalue(Compiler* compiler, Token* name);
+
 static void writeLocal(Compiler* compiler, Local* local) {
     if (compiler->localCapacity < compiler->localCount + 1) {
         int oldCapacity = compiler->localCapacity;
@@ -289,20 +303,6 @@ static void endScope() {
     // Emit any leftover pops
     emitPops(popCount);
 }
-
-// Forward declarations to get around recursive nature of grammar
-static void expression();
-static void statement();
-static void declaration();
-static ParseRule* getRule(TokenType type);
-static void parsePrecedence(Precedence precedence);
-static uint16_t identifierConstant(Token* name);
-static uint16_t parseVariable(const char* errorMessage);
-static void defineVariable(uint16_t global);
-static int resolveLocal(Compiler* compiler, Token* name);
-static void markInitialized();
-static uint8_t argumentList();
-static int resolveUpvalue(Compiler* compiler, Token* name);
 
 static void binary(bool canAssign) {
     // Remember the operator.
@@ -609,6 +609,52 @@ static void or_(bool canAssign) {
     patchJump(endJump);
 }
 
+static void basicString(bool canAssign) {
+    // Basic strings can have escape sequences.
+    // Need to scan token chars and build up new string with converted
+    // escape sequences.
+    int tokenLen = parser.previous.length - 2;
+    int realLen = 0;
+
+    char* new = ALLOCATE(char, tokenLen);
+
+    for (int i = 1; i < tokenLen + 1; ++i) {
+        char c = parser.previous.start[i];
+
+        // Can't have escape sequence with only 1 char left
+        if (i < tokenLen && c == '\\') {
+            char next = parser.previous.start[++i];
+            switch (next) {
+                case '\n':
+                    break;
+                case '\\':
+                    new[realLen++] = '\\';
+                    break;
+                case '\'':
+                    new[realLen++] = '\'';
+                    break;
+                case '\"':
+                    new[realLen++] = '\"';
+                    break;
+                case 'n':
+                    new[realLen++] = '\n';
+                    break;
+                case 't':
+                    new[realLen++] = '\t';
+                    break;
+                default:
+                    break;
+            }
+            continue;
+        }
+
+        new[realLen++] = c;
+    }
+    emitConstant(OBJ_VAL(copyString(new, realLen)));
+    FREE(char, new);
+}
+
+// TODO support actual templating
 static void templateString(bool canAssign) {
     // Template strings can have escape sequences.
     // Need to scan token chars and build up new string with converted
@@ -652,6 +698,10 @@ static void templateString(bool canAssign) {
     }
     emitConstant(OBJ_VAL(copyString(new, realLen)));
     FREE(char, new);
+}
+
+static void rawString(bool canAssign) {
+      emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 static void namedVariable(Token name, bool canAssign) {
@@ -711,44 +761,46 @@ static void unary(bool canAssign) {
 }
 
 ParseRule rules[] = {
-    // Prefix   Infix    Precedence
-    { grouping, call,    PREC_CALL },       // TOKEN_LEFT_PAREN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_PAREN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_LEFT_BRACE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_RIGHT_BRACE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_COMMA
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_DOT
-    { unary,    binary,  PREC_TERM },       // TOKEN_MINUS
-    { NULL,     binary,  PREC_TERM },       // TOKEN_PLUS
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_SEMICOLON
-    { NULL,     binary,  PREC_FACTOR },     // TOKEN_SLASH
-    { NULL,     binary,  PREC_FACTOR },     // TOKEN_STAR
-    { unary,    NULL,    PREC_NONE },       // TOKEN_BANG
-    { NULL,     binary,  PREC_EQUALITY },   // TOKEN_BANG_EQUAL
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_EQUAL
-    { NULL,     binary,  PREC_EQUALITY },   // TOKEN_EQUAL_EQUAL
-    { NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER
-    { NULL,     binary,  PREC_COMPARISON }, // TOKEN_GREATER_EQUAL
-    { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
-    { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
-    { variable, NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-    { templateString,  NULL,  PREC_NONE },  // TOKEN_TEMPLATE_STRING
-    { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
-    { NULL,     and_,    PREC_AND },       // TOKEN_AND
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_ELSE
-    { literal,  NULL,    PREC_NONE },       // TOKEN_FALSE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_FOR
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_FUN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_IF
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_LET
-    { literal,  NULL,    PREC_NONE },       // TOKEN_NIL
-    { NULL,     or_,     PREC_OR },       // TOKEN_OR
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_RETURN
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_THIS
-    { literal,  NULL,    PREC_NONE },       // TOKEN_TRUE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_WHILE
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_ERROR
-    { NULL,     NULL,    PREC_NONE },       // TOKEN_EOF
+    // Prefix          Infix    Precedence
+    { grouping,        call,    PREC_CALL },        // TOKEN_LEFT_PAREN
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_RIGHT_PAREN
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_LEFT_BRACE
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_RIGHT_BRACE
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_COMMA
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_DOT
+    { unary,           binary,  PREC_TERM },        // TOKEN_MINUS
+    { NULL,            binary,  PREC_TERM },        // TOKEN_PLUS
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_SEMICOLON
+    { NULL,            binary,  PREC_FACTOR },      // TOKEN_SLASH
+    { NULL,            binary,  PREC_FACTOR },      // TOKEN_STAR
+    { unary,           NULL,    PREC_NONE },        // TOKEN_BANG
+    { NULL,            binary,  PREC_EQUALITY },    // TOKEN_BANG_EQUAL
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_EQUAL
+    { NULL,            binary,  PREC_EQUALITY },    // TOKEN_EQUAL_EQUAL
+    { NULL,            binary,  PREC_COMPARISON },  // TOKEN_GREATER
+    { NULL,            binary,  PREC_COMPARISON },  // TOKEN_GREATER_EQUAL
+    { NULL,            binary,  PREC_COMPARISON },  // TOKEN_LESS
+    { NULL,            binary,  PREC_COMPARISON },  // TOKEN_LESS_EQUAL
+    { basicString,     binary,  PREC_NONE },        // TOKEN_BASIC_STRING
+    { variable,        NULL,    PREC_NONE },        // TOKEN_IDENTIFIER
+    { number,          NULL,    PREC_NONE },        // TOKEN_NUMBER
+    { templateString,  NULL,    PREC_NONE },        // TOKEN_TEMPLATE_STRING
+    { rawString,       NULL,    PREC_NONE },        // TOKEN_RAW_STRING
+    { NULL,            and_,    PREC_AND },         // TOKEN_AND
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_ELSE
+    { literal,         NULL,    PREC_NONE },        // TOKEN_FALSE
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_FOR
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_FUN
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_IF
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_LET
+    { literal,         NULL,    PREC_NONE },        // TOKEN_NIL
+    { NULL,            or_,     PREC_OR },          // TOKEN_OR
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_RETURN
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_THIS
+    { literal,         NULL,    PREC_NONE },        // TOKEN_TRUE
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_WHILE
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_ERROR
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_EOF
 };
 
 static void parsePrecedence(Precedence precedence) {

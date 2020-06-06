@@ -1,0 +1,2 @@
+// [line 2] Error: Unterminated raw string.
+`this string has no close quote

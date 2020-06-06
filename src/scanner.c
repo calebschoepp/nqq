@@ -182,8 +182,29 @@ static Token number() {
     return makeToken(TOKEN_NUMBER);
 }
 
+static Token basicString() {
+    while (peek() != '\'' && peek() != '\n' && !isAtEnd()) {
+        if (peek() == '\n') {
+            scanner.line++;
+        } else if (peek() == '\\' && peekNext() == '\'') {
+            advance();
+        } else if (peek() == '\\' && peekNext() == '\n') {
+            advance();
+            scanner.line++;
+        } else if (peek() == '\\' && peekNext() == '\\') {
+            advance();
+        }
+        advance();
+    }
+
+    if (isAtEnd()) return errorToken("Unterminated basic string.");
+
+    // The closing quote.
+    advance();
+    return makeToken(TOKEN_BASIC_STRING);
+}
+
 static Token templateString() {
-    // TODO decide on multiline string behavior
     while (peek() != '"' && peek() != '\n' && !isAtEnd()) {
         if (peek() == '\n') {
             scanner.line++;
@@ -203,6 +224,19 @@ static Token templateString() {
     // The closing quote.
     advance();
     return makeToken(TOKEN_TEMPLATE_STRING);
+}
+
+static Token rawString() {
+    while (peek() != '`' && !isAtEnd()) {
+        if (peek() == '\n') scanner.line++;
+        advance();
+    }
+
+    if (isAtEnd()) return errorToken("Unterminated raw string.");
+
+    // The closing quote.
+    advance();
+    return makeToken(TOKEN_RAW_STRING);
 }
 
 Token scanToken() {
@@ -237,7 +271,9 @@ Token scanToken() {
             return makeToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
         case '>':
             return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+        case '\'': return basicString();
         case '"': return templateString();
+        case '`': return rawString();
     }
 
     return errorToken("Unexpected character.");

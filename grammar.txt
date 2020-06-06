@@ -46,8 +46,11 @@ arguments      → expression ( "," expression )* ;
 
 LEXICAL GRAMMAR
 ---------------
+STRING         → BASIC | TEMPLATE | RAW ;
+BASIC          → "'" <any char except un-escaped "'">* "'" ;
+TEMPLATE       → '"' <any char except un-escaped '"'>* '"' ;
+RAW            → '`' <any char except '`'>* '`' ;
 NUMBER         → DIGIT+ ( "." DIGIT+ )? ;
-STRING         → '"' <any char except '"'>* '"' ;
 IDENTIFIER     → ALPHA ( ALPHA | DIGIT )* ;
 ALPHA          → 'a' ... 'z' | 'A' ... 'Z' | '_' ;
 DIGIT          → '0' ... '9' ;
