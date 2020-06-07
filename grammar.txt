@@ -33,9 +33,9 @@ logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
-multiplication → unary ( ( "/" | "*" ) unary )* ;
-
+multiplication → unary ( ( "/" | "*" | "%" ) unary )* ;
 unary          → ( "!" | "-" ) unary | call ;
+power          → call ( "**" call )* ;
 call           → primary ( "(" arguments? ")" )* ;
 primary        → "true" | "false" | "nil" | "this"
                | NUMBER | STRING | IDENTIFIER | "(" expression ")" ;

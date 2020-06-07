@@ -1,0 +1,5 @@
+print(5 ** 3);     // expect: 125
+print(1 ** 1);     // expect: 1
+print(2 ** 0);     // expect: 1
+print(3 ** -4);    // expect: 0.0123457
+print(0.2 ** 0.1); // expect: 0.85134

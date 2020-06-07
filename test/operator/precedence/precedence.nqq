@@ -1,0 +1,9 @@
+fun num(n) {
+    return n;
+}
+
+print(1 + 2 * 7); // expect: 15
+print(-1 + 2 * 7); // expect: 13
+print(-3 ** 2); // expect: -9
+print(-3 ** num(2)); // expect: -9
+print(1 + 2 * 4 ** 1 - 4 % 3 >= 2 - -1 / num(1) and true); // expect: true

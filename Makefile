@@ -6,6 +6,7 @@ RELEASE_BINARY := nqq
 DEBUG_BINARY := nqqd
 CC         := gcc
 CFLAGS     := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
+LFLAGS     := -lm
 
 # The following variables are implicitly defined by recursive make calls.
 # e.g. @ $(MAKE) nqq MODE=release NAME=nqq
@@ -67,7 +68,7 @@ build: $(NAME)
 $(NAME): $(OBJECTS)
 	@ printf "%3s %-20s %s\n" $(CC) $@ "$(CFLAGS)"
 	@ mkdir -p build
-	@ $(CC) $(CFLAGS) $^ -o $@
+	@ $(CC) $(CFLAGS) $^ $(LFLAGS) -o $@
 
 # Compile object files.
 $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)

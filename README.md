@@ -18,11 +18,11 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Comprehensions
 - [x] Multi-line comments
 - [ ] Postfix/prefix increment/decrement
-- [ ] Exponent operator
+- [x] Exponent operator
 - [ ] Short hand assignment operators
 - [ ] Implicit semi-colons
 - [x] Print as a function
-- [ ] Modulo operator
+- [x] Modulo operator
 - [ ] Bitwise operators?
 - [x] Assert (Make my debugging life way easier)
 - [x] Build an end to end testing frameworks

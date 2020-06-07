@@ -1,0 +1,4 @@
+print(5 % 3); // expect: 2
+print(12 % 4); // expect: 0
+print(125 % 124); // expect: 1
+print(7.1 % 0.2); // expect: 0.1
