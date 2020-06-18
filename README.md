@@ -2,18 +2,19 @@
 C implementation of nqq (modified implementation of clox)
 
 # Features to add
-- [x] Escape sequences in strings
-- [ ] Struct type?
-- [ ] String interpolation
-- [ ] Ternary operator?
-- [x] Explicit multi-line strings
+- [ ] Break statement
+- [ ] Continue statement
 - [ ] Lists
 - [ ] Maps
 - [ ] Sets
+- [ ] Enums
+- [x] Escape sequences in strings
+- [ ] Struct type?
+- [ ] String interpolation (Not possible without huge refactor of frontend)
+- [ ] Ternary operator? (Do I even want? A ? X : Y === A and X or Y)
+- [x] Explicit multi-line strings
 - [ ] Error handling (error codes and abort)
 - [ ] Modules
-- [ ] Break statement
-- [ ] Continue statement
 - [ ] Lambdas i.e. anonymous functions
 - [ ] Comprehensions
 - [x] Multi-line comments
@@ -23,7 +24,7 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Implicit semi-colons
 - [x] Print as a function
 - [x] Modulo operator
-- [ ] Bitwise operators?
+- [ ] Bitwise operators? (Only bother if project gets serious)
 - [x] Assert (Make my debugging life way easier)
 - [x] Build an end to end testing frameworks
 - [ ] Build a benchmarking framework
@@ -31,7 +32,7 @@ C implementation of nqq (modified implementation of clox)
 - [ ] Optional parameters
 - [ ] Variable parameters
 - [ ] Pattern matching
-- [ ] Int type?
+- [ ] Int type? (Only bother if project gets serious)
 
 # Builtins to add
 - [ ] Std I/O

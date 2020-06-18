@@ -1,0 +1,47 @@
+
+let i = 0;
+while (i < 10) {
+    if (i > 2) {
+        i = i + 1;
+        continue;
+    }
+    print(i);
+    i = i + 1;
+}
+// expect: 0
+// expect: 1
+// expect: 2
+
+let j = 0;
+while (j < 10) {
+    j = j + 1;
+    continue;
+    print(j);
+}
+
+let k = 0;
+while (k < 2) {
+    if (false) {
+        continue;
+    }
+    print(k);
+    k = k + 1;
+}
+// expect: 0
+// expect: 1
+
+let p = 0;
+while (p < 3) {
+    let m = -1;
+    while (m < 3) {
+        m = m + 1;
+        if (m >= 1) {
+            continue;
+        }
+        print(m);
+    }
+    p = p + 1;
+}
+// expect: 0
+// expect: 0
+// expect: 0

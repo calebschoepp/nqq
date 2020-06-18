@@ -29,7 +29,7 @@ typedef enum {
     PREC_TERM,        // + -
     PREC_FACTOR,      // * / %
     PREC_UNARY,       // ! -
-    PREC_POWER,    // **
+    PREC_POWER,       // **
     PREC_CALL,        // . ()
     PREC_PRIMARY
 } Precedence;
@@ -76,6 +76,10 @@ typedef struct Compiler {
 Parser parser;
 
 Compiler* current = NULL;
+
+// Globals for continue statement
+int innermostLoopStart = -1;
+int innermostLoopScopeDepth = 0;
 
 // Forward declarations to get around recursive nature of grammar
 static void expression();
@@ -424,6 +428,29 @@ static void varDeclaration() {
     defineVariable(global);
 }
 
+static void breakStatement() {
+    return;
+}
+
+static void continueStatement() {
+    if (innermostLoopStart == -1) {
+        error("Cannot use 'continue' outside of a loop.");
+    }
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+
+    // Discard any locals created inside the loop.
+    for (int i = current->localCount - 1;
+        i >= 0 && current->locals[i].depth > innermostLoopScopeDepth;
+        i--) {
+        // TODO optimize with OP_POP_N
+        emitByte(OP_POP);
+    }
+
+    // Jump to top of current innermost loop.
+    emitLoop(innermostLoopStart);
+}
+
 static void expressionStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
@@ -441,14 +468,17 @@ static void forStatement() {
         expressionStatement();
     }
 
-    int loopStart = currentChunk()->count;
+    int surroundingLoopStart = innermostLoopStart;
+    int surroundingLoopScopeDepth = innermostLoopScopeDepth;
+    innermostLoopStart = currentChunk()->count;
+    innermostLoopScopeDepth = current->scopeDepth;
 
     int exitJump = -1;
     if (!match(TOKEN_SEMICOLON)) {
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
 
-        // Jump out of the lif the condition is false
+        // Jump out of the loop if the condition is false
         exitJump = emitJump(OP_JUMP_IF_FALSE);
         emitByte(OP_POP); // Condition
     }
@@ -461,19 +491,22 @@ static void forStatement() {
         emitByte(OP_POP);
         consume(TOKEN_RIGHT_PAREN, "Expect a ')' after for clauses.");
 
-        emitLoop(loopStart);
-        loopStart = incrementStart;
+        emitLoop(innermostLoopStart);
+        innermostLoopStart = incrementStart;
         patchJump(bodyJump);
     }
 
     statement();
 
-    emitLoop(loopStart);
+    emitLoop(innermostLoopStart);
 
     if (exitJump != -1) {
         patchJump(exitJump);
         emitByte(OP_POP); // Condition
     }
+
+    innermostLoopStart = surroundingLoopStart;
+    innermostLoopScopeDepth = surroundingLoopScopeDepth;
 
     endScope();
 }
@@ -511,7 +544,10 @@ static void returnStatement() {
 }
 
 static void whileStatement() {
-    int loopStart = currentChunk()->count;
+    int surroundingLoopStart = innermostLoopStart;
+    int surroundingLoopScopeDepth = innermostLoopScopeDepth;
+    innermostLoopStart = currentChunk()->count;
+    innermostLoopScopeDepth = current->scopeDepth;
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
     expression();
@@ -522,10 +558,13 @@ static void whileStatement() {
     emitByte(OP_POP);
     statement();
 
-    emitLoop(loopStart);
+    emitLoop(innermostLoopStart);
 
     patchJump(exitJump);
     emitByte(OP_POP);
+
+    innermostLoopStart = surroundingLoopStart;
+    innermostLoopScopeDepth = surroundingLoopScopeDepth;
 }
 
 static void synchronize() {
@@ -565,7 +604,11 @@ static void declaration() {
 }
 
 static void statement() {
-    if (match(TOKEN_FOR)) {
+    if (match(TOKEN_BREAK)) {
+        breakStatement();
+    } else if (match(TOKEN_CONTINUE)) {
+        continueStatement();
+    } else if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
@@ -777,7 +820,7 @@ ParseRule rules[] = {
     { NULL,            binary,  PREC_FACTOR },      // TOKEN_SLASH
     { NULL,            binary,  PREC_FACTOR },      // TOKEN_MODULO
     { NULL,            binary,  PREC_FACTOR },      // TOKEN_STAR
-    { NULL,            binary,  PREC_POWER },    // TOKEN_STAR_STAR
+    { NULL,            binary,  PREC_POWER },       // TOKEN_STAR_STAR
     { unary,           NULL,    PREC_NONE },        // TOKEN_BANG
     { NULL,            binary,  PREC_EQUALITY },    // TOKEN_BANG_EQUAL
     { NULL,            NULL,    PREC_NONE },        // TOKEN_EQUAL
@@ -792,6 +835,8 @@ ParseRule rules[] = {
     { templateString,  NULL,    PREC_NONE },        // TOKEN_TEMPLATE_STRING
     { rawString,       NULL,    PREC_NONE },        // TOKEN_RAW_STRING
     { NULL,            and_,    PREC_AND },         // TOKEN_AND
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_BREAK
+    { NULL,            NULL,    PREC_NONE },        // TOKEN_CONTINUE
     { NULL,            NULL,    PREC_NONE },        // TOKEN_ELSE
     { literal,         NULL,    PREC_NONE },        // TOKEN_FALSE
     { NULL,            NULL,    PREC_NONE },        // TOKEN_FOR
@@ -801,7 +846,6 @@ ParseRule rules[] = {
     { literal,         NULL,    PREC_NONE },        // TOKEN_NIL
     { NULL,            or_,     PREC_OR },          // TOKEN_OR
     { NULL,            NULL,    PREC_NONE },        // TOKEN_RETURN
-    { NULL,            NULL,    PREC_NONE },        // TOKEN_THIS
     { literal,         NULL,    PREC_NONE },        // TOKEN_TRUE
     { NULL,            NULL,    PREC_NONE },        // TOKEN_WHILE
     { NULL,            NULL,    PREC_NONE },        // TOKEN_ERROR

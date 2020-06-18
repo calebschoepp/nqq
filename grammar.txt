@@ -7,13 +7,17 @@ declaration    → funDecl | varDecl | statement ;
 funDecl        → "fun" function ;
 varDecl        → "let" IDENTIFIER ( "=" expression )? ";" ;
 
-statement      → exprStmt
+statement      → breakStmt
+               | continueStmt
+               | exprStmt
                | forStmt
                | ifStmt
                | returnStmt
                | whileStmt
                | block ;
 
+breakStmt      → "break" ";" ;
+continueStmt   → "continue" ";" ;
 exprStmt       → expression ";" ;
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                            expression? ";"

@@ -1,0 +1,35 @@
+for (let i = 0; i < 10; i = i + 1) {
+    if (i > 2) {
+        continue;
+    }
+    print(i);
+}
+// expect: 0
+// expect: 1
+// expect: 2
+
+for (let j = 0; j < 10; j = j + 1) {
+    continue;
+    print(j);
+}
+
+for (let k = 0; k < 2; k = k + 1) {
+    if (false) {
+        continue;
+    }
+    print(k);
+}
+// expect: 0
+// expect: 1
+
+for (let p = 0; p < 3; p = p + 1) {
+    for (let m = 0; m < 3; m = m + 1) {
+        if (m >= 1) {
+            continue;
+        }
+        print(m);
+    }
+}
+// expect: 0
+// expect: 0
+// expect: 0
