@@ -59,7 +59,7 @@ static int jumpInstruction(const char* name, int sign, Chunk* chunk, int offset)
     jump |= chunk->code[offset + 2];
     printf("%-16s %5d -> %d\n", name, offset, offset + 3 + sign * jump);
     return offset + 3;
-}     
+}
 
 static int wideInstruction(const char* name, int offset) {
     nextOpWide = true;

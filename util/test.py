@@ -1,7 +1,5 @@
 #!./util/env/bin/python3
 
-# TOOD fix weird test output when terminal is in default size
-
 from collections import defaultdict
 from os import listdir
 from os.path import abspath, basename, dirname, isdir, isfile, join, realpath, relpath, splitext
@@ -301,13 +299,14 @@ def run_script(path):
     # Normalize it to use "/" since, among other things, the interpreters expect
     # the argument to use that.
     path = relpath(path).replace("\\", "/")
+    printable_path = path.split("/")[-1]
 
     # Update the status line.
     term.print_line('Passed: {} Failed: {} Skipped: {} {}'.format(
             term.green(passed),
             term.red(failed),
             term.yellow(num_skipped),
-            term.gray('({})'.format(path))))
+            term.gray('({})'.format(printable_path))))
 
     # Read the test and parse out the expectations.
     test = Test(path)

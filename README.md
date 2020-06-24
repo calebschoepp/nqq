@@ -2,37 +2,39 @@
 C implementation of nqq (modified implementation of clox)
 
 # Features to add
-- [ ] Break statement
-- [ ] Continue statement
+- [x] Break statement
+- [x] Continue statement
+- [ ] Short hand assignment operators
+- [ ] Decide on wide semantics
 - [ ] Lists
 - [ ] Maps
 - [ ] Sets
 - [ ] Enums
-- [x] Escape sequences in strings
-- [ ] Struct type?
+- [ ] Build a benchmarking framework
+- [ ] Optional parameters
+- [ ] Variable parameters
 - [ ] String interpolation (Not possible without huge refactor of frontend)
-- [ ] Ternary operator? (Do I even want? A ? X : Y === A and X or Y)
-- [x] Explicit multi-line strings
 - [ ] Error handling (error codes and abort)
 - [ ] Modules
 - [ ] Lambdas i.e. anonymous functions
 - [ ] Comprehensions
-- [x] Multi-line comments
-- [ ] Postfix/prefix increment/decrement
-- [x] Exponent operator
-- [ ] Short hand assignment operators
 - [ ] Implicit semi-colons
+- [ ] Pattern matching
+- [ ] Concurrency primitives in syntax
+- [x] Multi-line comments
+- [x] Exponent operator
+- [x] Explicit multi-line strings
 - [x] Print as a function
 - [x] Modulo operator
-- [ ] Bitwise operators? (Only bother if project gets serious)
 - [x] Assert (Make my debugging life way easier)
 - [x] Build an end to end testing frameworks
-- [ ] Build a benchmarking framework
-- [ ] Decide on wide semantics
-- [ ] Optional parameters
-- [ ] Variable parameters
-- [ ] Pattern matching
+- [x] Escape sequences in strings
+- [ ] Struct type (Can I just use maps? Do I need native syntax for this behavior)
 - [ ] Int type? (Only bother if project gets serious)
+- [ ] Ternary operator? (Do I even want? A ? X : Y === A and X or Y)
+- [ ] Bitwise operators? (Only bother if project gets serious)
+- [ ] Postfix/prefix increment/decrement (Prefer short hand assignment)
+
 
 # Builtins to add
 - [ ] Std I/O

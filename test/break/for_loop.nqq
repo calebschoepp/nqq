@@ -1,3 +1,4 @@
+// Normal case
 for (let i = 0; i < 10; i = i + 1) {
     print(i);
     if (i == 2) {
@@ -8,11 +9,13 @@ for (let i = 0; i < 10; i = i + 1) {
 // expect: 1
 // expect: 2
 
+// Always triggering break statement
 for (let j = 0; j < 10; j = j + 1) {
     break;
     print(j);
 }
 
+// Non-triggering break statement
 for (let k = 0; k < 2; k = k + 1) {
     if (false) {
         break;
@@ -22,6 +25,7 @@ for (let k = 0; k < 2; k = k + 1) {
 // expect: 0
 // expect: 1
 
+// Nested break statement
 for (let p = 0; p < 3; p = p + 1) {
     for (let m = 0; m < 3; m = m + 1) {
         if (m == 1) {
@@ -33,3 +37,43 @@ for (let p = 0; p < 3; p = p + 1) {
 // expect: 0
 // expect: 0
 // expect: 0
+
+// Multiple break statements
+let sum = 0;
+for (;;) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+}
+for (;;) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+}
+for (;;) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+}
+print(sum); // expect: 3

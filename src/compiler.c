@@ -8,6 +8,8 @@
 #include "object.h"
 #include "scanner.h"
 
+#include "debug.h"
+
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
@@ -77,9 +79,17 @@ Parser parser;
 
 Compiler* current = NULL;
 
-// Globals for continue statement
+// Types and globals for continue/break statements
+typedef struct BreakJump {
+    int scopeDepth;
+    int offset;
+    struct BreakJump* next;
+} BreakJump;
+
 int innermostLoopStart = -1;
 int innermostLoopScopeDepth = 0;
+
+BreakJump* breakJumps = NULL;
 
 // Forward declarations to get around recursive nature of grammar
 static void expression();
@@ -309,6 +319,22 @@ static void endScope() {
     emitPops(popCount);
 }
 
+static void patchBreakJumps() {
+    while (breakJumps != NULL) {
+        if (breakJumps->scopeDepth >= innermostLoopScopeDepth) {
+            // Patch break jump
+            patchJump(breakJumps->offset);
+
+            // Remove node from linked list
+            BreakJump* temp = breakJumps;
+            breakJumps = breakJumps->next;
+            FREE(BreakJump, temp);
+        } else {
+            break;
+        }
+    }
+}
+
 static void binary(bool canAssign) {
     // Remember the operator.
     TokenType operatorType = parser.previous.type;
@@ -429,7 +455,30 @@ static void varDeclaration() {
 }
 
 static void breakStatement() {
-    return;
+    if (innermostLoopStart == -1) {
+        error("Cannot use 'break' outside of a loop.");
+    }
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+
+    // Discard any locals created inside the loop.
+    for (int i = current->localCount - 1;
+        i >= 0 && current->locals[i].depth > innermostLoopScopeDepth;
+        i--) {
+        // TODO optimize with OP_POP_N
+        emitByte(OP_POP);
+    }
+
+    // Jump to the end of the loop
+    // This needs to be patched when loop block is exited
+    int jmp = emitJump(OP_JUMP);
+
+    // Add breakJump to start of linked list
+    BreakJump* breakJump = ALLOCATE(BreakJump, 1);
+    breakJump->scopeDepth = innermostLoopScopeDepth;
+    breakJump->offset = jmp;
+    breakJump->next = breakJumps;
+    breakJumps = breakJump;
 }
 
 static void continueStatement() {
@@ -505,6 +554,8 @@ static void forStatement() {
         emitByte(OP_POP); // Condition
     }
 
+    patchBreakJumps();
+
     innermostLoopStart = surroundingLoopStart;
     innermostLoopScopeDepth = surroundingLoopScopeDepth;
 
@@ -562,6 +613,8 @@ static void whileStatement() {
 
     patchJump(exitJump);
     emitByte(OP_POP);
+
+    patchBreakJumps();
 
     innermostLoopStart = surroundingLoopStart;
     innermostLoopScopeDepth = surroundingLoopScopeDepth;

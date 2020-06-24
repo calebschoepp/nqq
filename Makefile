@@ -66,12 +66,12 @@ build: $(NAME)
 
 # Link the interpreter.
 $(NAME): $(OBJECTS)
-	@ printf "%3s %-20s %s\n" $(CC) $@ "$(CFLAGS)"
+	@ printf "%3s %s\n" $(CC) $@
 	@ mkdir -p build
 	@ $(CC) $(CFLAGS) $^ $(LFLAGS) -o $@
 
 # Compile object files.
 $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
-	@ printf "%3s %-20s %s\n" $(CC) $< "$(CFLAGS)"
+	@ printf "%3s %s\n" $(CC) $<
 	@ mkdir -p $(BUILD_DIR)/$(NAME)
 	@ $(CC) -c $(CFLAGS) -o $@ $<

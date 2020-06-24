@@ -1,5 +1,5 @@
-
-let i = 0
+// Normal case
+let i = 0;
 while (i < 10) {
     print(i);
     if (i == 2) {
@@ -11,6 +11,7 @@ while (i < 10) {
 // expect: 1
 // expect: 2
 
+// Always breaks
 let j = 0;
 while (j < 10) {
     break;
@@ -18,6 +19,7 @@ while (j < 10) {
     j = j + 1;
 }
 
+// Never breaks
 let k = 0;
 while (k < 2) {
     if (false) {
@@ -29,6 +31,7 @@ while (k < 2) {
 // expect: 0
 // expect: 1
 
+// Nested break
 let p = 0;
 while (p < 3) {
     let m = 0;
@@ -44,3 +47,43 @@ while (p < 3) {
 // expect: 0
 // expect: 0
 // expect: 0
+
+// Multiple breaks
+let sum = 0;
+while (true) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+}
+while (true) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+}
+while (true) {
+    sum = sum + 1;
+    if (false) {
+        break;
+    }
+    if (false) {
+        break;
+    }
+    if (true) {
+        break;
+    }
+}
+print(sum); // expect: 3
