@@ -29,7 +29,7 @@ block          → "{" declaration* "}" ;
 
 expression     → assignment ;
 
-assignment     → ( call "." )? IDENTIFIER "=" assignment
+assignment     → ( call "." )? IDENTIFIER assigner assignment
                | logic_or;
 
 logic_or       → logic_and ( "or" logic_and )* ;
@@ -47,6 +47,7 @@ primary        → "true" | "false" | "nil" | "this"
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
+assigner       → "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" ;
 
 LEXICAL GRAMMAR
 ---------------

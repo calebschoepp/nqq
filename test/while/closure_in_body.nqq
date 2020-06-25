@@ -11,7 +11,7 @@ while (i < 4) {
   else if (j == 2) f2 = f;
   else f3 = f;
 
-  i = i + 1;
+  i += 1;
 }
 
 f1(); // expect: 1

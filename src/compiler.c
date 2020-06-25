@@ -355,7 +355,7 @@ static void binary(bool canAssign) {
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
     case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
-    case TOKEN_MODULO:        emitByte(OP_MODULO); break;
+    case TOKEN_PERCENT:       emitByte(OP_MODULO); break;
     case TOKEN_STAR_STAR:     emitByte(OP_POWER); break;
     default:
         return; // Unreachable.
@@ -804,6 +804,27 @@ static void rawString(bool canAssign) {
 }
 
 static void namedVariable(Token name, bool canAssign) {
+#define SHORT_HAND_ASSIGNER(op) \
+    do { \
+        if (arg < 256) { \
+            emitBytes(getOp, (uint8_t)arg); \
+            expression(); \
+            emitByte(op); \
+            emitBytes(setOp, (uint8_t)arg); \
+        } else { \
+            emitByte(OP_WIDE); \
+            emitByte(getOp); \
+            emitByte((uint8_t)(arg >> 8)); \
+            emitByte((uint8_t)arg); \
+            expression(); \
+            emitByte(op); \
+            emitByte(OP_WIDE); \
+            emitByte(setOp); \
+            emitByte((uint8_t)(arg >> 8)); \
+            emitByte((uint8_t)arg); \
+        } \
+    } while (false)
+
     uint8_t getOp, setOp;
     int arg = resolveLocal(current, &name);
     if (arg != -1) {
@@ -828,6 +849,18 @@ static void namedVariable(Token name, bool canAssign) {
             emitByte((uint8_t)(arg >> 8));
             emitByte((uint8_t)arg);
         }
+    } else if (canAssign && match(TOKEN_PLUS_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_ADD);
+    } else if (canAssign && match(TOKEN_MINUS_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_SUBTRACT);
+    } else if (canAssign && match(TOKEN_STAR_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_MULTIPLY);
+    } else if (canAssign && match(TOKEN_SLASH_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_DIVIDE);
+    } else if (canAssign && match(TOKEN_PERCENT_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_MODULO);
+    } else if (canAssign && match(TOKEN_STAR_STAR_EQUAL)) {
+        SHORT_HAND_ASSIGNER(OP_POWER);
     } else {
         if (arg < 256) {
             emitBytes(getOp, (uint8_t)arg);
@@ -838,6 +871,7 @@ static void namedVariable(Token name, bool canAssign) {
             emitByte((uint8_t)arg);
         }
     }
+#undef SHORT_HAND_ASSIGNER
 }
 
 static void variable(bool canAssign) {
@@ -871,7 +905,7 @@ ParseRule rules[] = {
     { NULL,            binary,  PREC_TERM },        // TOKEN_PLUS
     { NULL,            NULL,    PREC_NONE },        // TOKEN_SEMICOLON
     { NULL,            binary,  PREC_FACTOR },      // TOKEN_SLASH
-    { NULL,            binary,  PREC_FACTOR },      // TOKEN_MODULO
+    { NULL,            binary,  PREC_FACTOR },      // TOKEN_PERCENT
     { NULL,            binary,  PREC_FACTOR },      // TOKEN_STAR
     { NULL,            binary,  PREC_POWER },       // TOKEN_STAR_STAR
     { unary,           NULL,    PREC_NONE },        // TOKEN_BANG
@@ -882,6 +916,12 @@ ParseRule rules[] = {
     { NULL,            binary,  PREC_COMPARISON },  // TOKEN_GREATER_EQUAL
     { NULL,            binary,  PREC_COMPARISON },  // TOKEN_LESS
     { NULL,            binary,  PREC_COMPARISON },  // TOKEN_LESS_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_PLUS_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_MINUS_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_STAR_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_SLASH_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_PERCENT_EQUAL
+    { NULL,            binary,  PREC_NONE },        // TOKEN_STAR_STAR_EQUAL
     { basicString,     binary,  PREC_NONE },        // TOKEN_BASIC_STRING
     { variable,        NULL,    PREC_NONE },        // TOKEN_IDENTIFIER
     { number,          NULL,    PREC_NONE },        // TOKEN_NUMBER

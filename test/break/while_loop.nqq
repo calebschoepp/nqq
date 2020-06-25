@@ -5,7 +5,7 @@ while (i < 10) {
     if (i == 2) {
         break;
     }
-    i = i + 1;
+    i += 1;
 }
 // expect: 0
 // expect: 1
@@ -16,7 +16,7 @@ let j = 0;
 while (j < 10) {
     break;
     print(j);
-    j = j + 1;
+    j += 1;
 }
 
 // Never breaks
@@ -26,7 +26,7 @@ while (k < 2) {
         break;
     }
     print(k);
-    k = k + 1;
+    k += 1;
 }
 // expect: 0
 // expect: 1
@@ -40,9 +40,9 @@ while (p < 3) {
             break;
         }
         print(m);
-        m = m + 1;
+        m += 1;
     }
-    p = p + 1;
+    p += 1;
 }
 // expect: 0
 // expect: 0
@@ -51,7 +51,7 @@ while (p < 3) {
 // Multiple breaks
 let sum = 0;
 while (true) {
-    sum = sum + 1;
+    sum += 1;
     if (false) {
         break;
     }
@@ -63,7 +63,7 @@ while (true) {
     }
 }
 while (true) {
-    sum = sum + 1;
+    sum += 1;
     if (false) {
         break;
     }
@@ -75,7 +75,7 @@ while (true) {
     }
 }
 while (true) {
-    sum = sum + 1;
+    sum += 1;
     if (false) {
         break;
     }

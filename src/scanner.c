@@ -254,12 +254,42 @@ Token scanToken() {
         case ';': return makeToken(TOKEN_SEMICOLON);
         case ',': return makeToken(TOKEN_COMMA);
         case '.': return makeToken(TOKEN_DOT);
-        case '-': return makeToken(TOKEN_MINUS);
-        case '+': return makeToken(TOKEN_PLUS);
-        case '/': return makeToken(TOKEN_SLASH);
-        case '%': return makeToken(TOKEN_MODULO);
+        case '-':
+            if (match('=')) {
+                return makeToken(TOKEN_MINUS_EQUAL);
+            } else {
+                return makeToken(TOKEN_MINUS);
+            }
+        case '+':
+            if (match('=')) {
+                return makeToken(TOKEN_PLUS_EQUAL);
+            } else {
+                return makeToken(TOKEN_PLUS);
+            }
+        case '/':
+            if (match('=')) {
+                return makeToken(TOKEN_SLASH_EQUAL);
+            } else {
+                return makeToken(TOKEN_SLASH);
+            }
+        case '%':
+            if (match('=')) {
+                return makeToken(TOKEN_PERCENT_EQUAL);
+            } else {
+                return makeToken(TOKEN_PERCENT);
+            }
         case '*':
-            return makeToken(match('*') ? TOKEN_STAR_STAR : TOKEN_STAR);
+            if (match('*')) {
+                if (match('=')) {
+                    return makeToken(TOKEN_STAR_STAR_EQUAL);
+                } else {
+                    return makeToken(TOKEN_STAR_STAR);
+                }
+            } else if (match('=')) {
+                return makeToken(TOKEN_STAR_EQUAL);
+            } else {
+                return makeToken(TOKEN_STAR);
+            }
         case '!':
             return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
         case '=':
