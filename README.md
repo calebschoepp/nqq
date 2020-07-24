@@ -4,16 +4,16 @@ C implementation of nqq (modified implementation of clox)
 # Features to add
 - [x] Break statement
 - [x] Continue statement
-- [ ] Short hand assignment operators
+- [x] Short hand assignment operators
 - [ ] Decide on wide semantics
 - [ ] Lists
 - [ ] Maps
 - [ ] Sets
 - [ ] Enums
 - [ ] Build a benchmarking framework
+- [ ] Iterators
 - [ ] Optional parameters
 - [ ] Variable parameters
-- [ ] String interpolation (Not possible without huge refactor of frontend)
 - [ ] Error handling (error codes and abort)
 - [ ] Modules
 - [ ] Lambdas i.e. anonymous functions
@@ -29,6 +29,7 @@ C implementation of nqq (modified implementation of clox)
 - [x] Assert (Make my debugging life way easier)
 - [x] Build an end to end testing frameworks
 - [x] Escape sequences in strings
+- [ ] String interpolation (Not possible without huge refactor of frontend)
 - [ ] Struct type (Can I just use maps? Do I need native syntax for this behavior)
 - [ ] Int type? (Only bother if project gets serious)
 - [ ] Ternary operator? (Do I even want? A ? X : Y === A and X or Y)
