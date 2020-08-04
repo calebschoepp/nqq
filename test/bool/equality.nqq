@@ -21,3 +21,11 @@ print(false != 0);       // expect: true
 print(true != "true");   // expect: true
 print(false != "false"); // expect: true
 print(false != "");      // expect: true
+
+// Lists
+print([1] == [1]);       // expect: true
+print(['a', 1, true] == ['a', 1, true]); // expect: true
+print([1] == 'a');       // expect: false
+print([1] == 1);         // expect: false
+print([1] == false);     // expect: false
+print([1] == [1, 2, 3]); // expect: false

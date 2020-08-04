@@ -8,6 +8,7 @@
 bool nextOpWide = false;
 
 void disassembleChunk(Chunk* chunk, const char* name) {
+    // TODO add column headers
     printf("== %s ==\n", name);
 
     for (int offset = 0; offset < chunk->count;) {
@@ -16,6 +17,7 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
+    // TODO avoid double quotes on strings somehowf
     if (nextOpWide) {
         nextOpWide = false;
         uint16_t constant = chunk->code[offset + 1];
@@ -152,6 +154,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
         }
         case OP_CLOSE_UPVALUE:
             return simpleInstruction("OP_CLOSE_UPVALUE", offset);
+        case OP_BUILD_LIST:
+            return byteInstruction("OP_BUILD_LIST", chunk, offset);
+        case OP_INDEX_SUBSCR:
+            return simpleInstruction("OP_INDEX_SUBSCR", offset);
+        case OP_STORE_SUBSCR:
+            return simpleInstruction("OP_STORE_SUBSCR", offset);
         case OP_WIDE:
             return wideInstruction("OP_WIDE", offset);
         case OP_RETURN:

@@ -1,0 +1,30 @@
+// Empty
+let a = [];
+print(a); // expect: []
+
+// Trailing comma
+let b = [1,];
+print(b); // expect: [1]
+
+// Uni-typed
+let c = [1, 2, 3, 4];
+let d = ['a', 'b', 'c', 'd'];
+let e = [true, true, false, true];
+print(c); // expect: [1, 2, 3, 4]
+print(d); // expect: ['a', 'b', 'c', 'd']
+print(e); // expect: [true, true, false, true]
+
+// Multi-typed
+let f = [1, 'a', true, nil];
+print(f); // expect: [1, 'a', true, nil]
+
+// Nested
+let g = [1, [1, 2, 3, [1, 2, [1, 2], 3], 4, 5], 2];
+print(g); // expect: [1, [1, 2, 3, [1, 2, [1, 2], 3], 4, 5], 2]
+
+// Not in variable assignment
+print([1, 2]); // expect: [1, 2]
+
+// Expressions etc.
+let h = [1, 1 + 1, g[0]];
+print(h); // expect: [1, 2, 1]

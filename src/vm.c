@@ -49,6 +49,30 @@ static bool isFalsey(Value value) {
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
+// TODO use a macro to guard against wrong argCount
+
+/*
+Standard Library:
+append, assert, clock, delete, input, len, num, print, write
+
+Missing:
+bool, string, list, map, set, slice, items, values, keys
+*/
+
+static bool appendNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Append a value to the end of a list increasing the list's length by 1
+    if (argCount != 2) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "append expected 2 argument but got %d.", argCount);
+        return true;
+    }
+    ObjList* list = AS_LIST(*args);
+    Value item = *(args + 1);
+    appendToList(list, item);
+    *result = NIL_VAL;
+    return false;
+}
+
 static bool assertNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Throw a runtime error if the argument does not evaluate to true
     if (argCount != 1) {
@@ -73,6 +97,26 @@ static bool clockNative(int argCount, Value* args, Value* result, char errMsg[])
         return true;
     }
     *result = NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+    return false;
+}
+
+static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Delete an item from a list at the given index. Every item past the
+    // deleted item has it's index decreased by 1.
+    if (argCount != 2) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "delete expected 2 argument but got %d.", argCount);
+        return true;
+    }
+    Value list = *args;
+    Value index = *(args + 1);
+    if (!isValidListIndex(AS_LIST(list), index)) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "invalid list index.");
+        return true;
+    }
+    deleteFromList(AS_LIST(list), AS_NUMBER(index));
+    *result = NIL_VAL;
     return false;
 }
 
@@ -104,8 +148,32 @@ static bool inputNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
+static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return the length of a string or list
+    if (argCount != 1) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "len expected 1 argument but got %d.", argCount);
+        return true;
+    }
+    Value value = *args;
+    if (IS_STRING(value)) {
+        ObjString* string = AS_STRING(value);
+        *result = NUMBER_VAL(string->length);
+        return false;
+    } else if (IS_LIST(value)) {
+        ObjList* list = AS_LIST(value);
+        *result = NUMBER_VAL(list->count);
+        return false;
+    } else {
+        *result = NIL_VAL;
+        sprintf(errMsg, "len expected a list or string.");
+        return true;
+    }
+}
+
 static bool numNative(int argCount, Value* args, Value* result, char errMsg[]) {
-        if (argCount != 1) {
+    // Attempt to convert a value into a number
+    if (argCount != 1) {
         *result = NIL_VAL;
         sprintf(errMsg, "num expected 1 argument but got %d.", argCount);
         return true;
@@ -145,7 +213,11 @@ static bool printNative(int argCount, Value* args, Value* result, char errMsg[])
         sprintf(errMsg, "print expected 1 argument but got %d.", argCount);
         return true;
     }
-    printValue(*args);
+    if (IS_STRING(*args)) {
+        printf("%s", AS_CSTRING(*args));
+    } else {
+        printValue(*args);
+    }
     printf("\n");
     *result = NIL_VAL;
     return false;
@@ -154,10 +226,14 @@ static bool printNative(int argCount, Value* args, Value* result, char errMsg[])
 static bool writeNative(int argCount, Value* args, Value* result, char errMsg[]) {
     if (argCount != 1) {
         *result = NIL_VAL;
-        sprintf(errMsg, "println expected 0 argument but got %d.", argCount);
+        sprintf(errMsg, "write expected 1 argument but got %d.", argCount);
         return true;
     }
-    printValue(*args);
+    if (IS_STRING(*args)) {
+        printf("%s", AS_CSTRING(*args));
+    } else {
+        printValue(*args);
+    }
     *result = NIL_VAL;
     return false;
 }
@@ -185,9 +261,12 @@ void initVM() {
     initTable(&vm.globals);
     initTable(&vm.strings);
 
+    defineNative("append", appendNative);
     defineNative("assert", assertNative);
     defineNative("clock", clockNative);
+    defineNative("delete", deleteNative);
     defineNative("input", inputNative);
+    defineNative("len", lenNative);
     defineNative("num", numNative);
     defineNative("print", printNative);
     defineNative("write", writeNative);
@@ -539,10 +618,82 @@ static InterpretResult run() {
             vm.nextOpWide = 2;
             break;
         }
-        case OP_CLOSE_UPVALUE:
+        case OP_CLOSE_UPVALUE: {
             closeUpvalues(vm.stackTop - 1);
             pop();
             break;
+        }
+        case OP_BUILD_LIST: {
+            // Build a new list
+            ObjList* list = newList();
+            uint16_t itemCount;
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                itemCount = READ_SHORT();
+            } else {
+                itemCount = READ_BYTE();
+            }
+
+            push(OBJ_VAL(list)); // So that the list isn't sweeped by GC in appendToList
+            for (int i = itemCount; i > 0; i--) {
+                appendToList(list, peek(i));
+            }
+            pop();
+
+            while (itemCount-- > 0) {
+                pop();
+            }
+            push(OBJ_VAL(list));
+            break;
+        }
+        case OP_INDEX_SUBSCR: {
+            // before: [indexable, index] after: [index(indexable, index)]
+            Value index = pop();
+            Value indexable = pop();
+            Value result;
+            if (IS_LIST(indexable)) {
+                ObjList* list = AS_LIST(indexable);
+                if (!isValidListIndex(list, index)) {
+                    runtimeError("Invalid list index.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                Value* temp = indexFromList(list, AS_NUMBER(index));
+                if (temp == NULL) {
+                    runtimeError("Failed to index list.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                result = *temp;
+            } else if (IS_STRING(indexable)) {
+                ObjString* string = AS_STRING(indexable);
+                if (!isValidStringIndex(string, index)) {
+                    runtimeError("Invalid string index.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                result = indexFromString(string, AS_NUMBER(index));
+            } else {
+                runtimeError("Invalid type for indexing.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(result);
+            break;
+        }
+        case OP_STORE_SUBSCR: {
+            Value item = pop();
+            Value index = pop();
+            Value list = pop();
+            if (!isValidListIndex(AS_LIST(list), index)) {
+                runtimeError("Invalid list index.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            uint8_t err = storeToList(AS_LIST(list), AS_NUMBER(index), item);
+            if (err != 0) {
+                runtimeError("Failed to store to list");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(item);
+
+            break;
+        }
         case OP_RETURN: {
             Value result = pop();
 

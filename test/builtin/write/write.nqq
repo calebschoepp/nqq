@@ -1,0 +1,2 @@
+write("Hi");
+write(" There"); // expect: Hi There

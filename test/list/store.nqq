@@ -1,0 +1,18 @@
+fun one() {
+    return 1;
+}
+
+let a = [1, 2, 3, 4, 5, 6];
+
+a[0] = true;
+print(a); // expect: [true, 2, 3, 4, 5, 6]
+
+let i = 4;
+a[i + one()] = 7;
+print(a); // expect: [true, 2, 3, 4, 5, 7]
+
+let c = [[1, 2], [3, 4]];
+c[1][1] = 5;
+print(c); // expect: [[1, 2], [3, 5]]
+
+c[2] = 3; // expect runtime error: Invalid list index.

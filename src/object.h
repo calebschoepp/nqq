@@ -9,11 +9,13 @@
 
 #define IS_CLOSURE(value)       isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value)      isObjType(value, OBJ_FUNCTION)
+#define IS_LIST(value)          isObjType(value, OBJ_LIST)
 #define IS_NATIVE(value)        isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value)        isObjType(value, OBJ_STRING)
 
 #define AS_CLOSURE(value)       ((ObjClosure*)AS_OBJ(value))
 #define AS_FUNCTION(value)      ((ObjFunction*)AS_OBJ(value))
+#define AS_LIST(value)          ((ObjList*)AS_OBJ(value))
 #define AS_NATIVE(value)        (((ObjNative*)AS_OBJ(value))->function)
 #define AS_STRING(value)        ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value)       (((ObjString*)AS_OBJ(value))->chars)
@@ -21,6 +23,7 @@
 typedef enum {
     OBJ_CLOSURE,
     OBJ_FUNCTION,
+    OBJ_LIST,
     OBJ_NATIVE,
     OBJ_STRING,
     OBJ_UPVALUE,
@@ -69,13 +72,27 @@ typedef struct {
     int upvalueCount;
 } ObjClosure;
 
+typedef struct {
+    Obj obj;
+    int count;
+    int capacity;
+    Value* items;
+} ObjList;
 
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function);
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
+Value indexFromString(ObjString* string, int index);
 ObjUpvalue* newUpvalue(Value* slot);
+ObjList* newList();
+void appendToList(ObjList* list, Value value);
+uint8_t storeToList(ObjList* list, int index, Value value);
+Value* indexFromList(ObjList* list, int index);
+uint8_t deleteFromList(ObjList* list, int index);
+bool isValidListIndex(ObjList* list, Value index);
+bool isValidStringIndex(ObjString* list, Value index);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {

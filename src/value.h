@@ -11,7 +11,7 @@ typedef enum {
     VAL_BOOL,
     VAL_NIL,
     VAL_NUMBER,
-    VAL_OBJ,
+    VAL_OBJ, // String, Function, Native, List
 } ValueType;
 
 typedef struct {
@@ -32,7 +32,6 @@ typedef struct {
 #define AS_BOOL(value)    ((value).as.boolean)
 #define AS_NUMBER(value)  ((value).as.number)
 #define AS_OBJ(value)     ((value).as.obj)
-
 
 // Raw C value -> Value
 #define BOOL_VAL(value)   ((Value){ VAL_BOOL, { .boolean = value } })
