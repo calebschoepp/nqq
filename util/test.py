@@ -38,7 +38,7 @@ class Interpreter:
 
 
 def add_suite(name, tests):
-    SUITES[name] = Interpreter(name, ['nqq'], tests)
+    SUITES[name] = Interpreter(name, ['./nqq'], tests)
 
 add_suite('All Tests', {
     'test': 'pass',
