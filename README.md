@@ -1,3 +1,5 @@
+![Build and Test](https://github.com/calebschoepp/nqq/workflows/Build%20and%20Test/badge.svg)
+
 # NQQ
 
 NQQ is my fork of Robert Nystrom's [Clox](https://github.com/munificent/craftinginterpreters/tree/master/c). I started working on it after reading his book [Crafting Interpreters](https://craftinginterpreters.com/).
