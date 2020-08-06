@@ -17,7 +17,7 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
-    // TODO avoid double quotes on strings somehowf
+    // TODO avoid double quotes on strings somehow
     if (nextOpWide) {
         nextOpWide = false;
         uint16_t constant = chunk->code[offset + 1];

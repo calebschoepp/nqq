@@ -22,4 +22,4 @@ print(d[0]()); // expect: 1
 let e = 'abc';
 print(e[1]); // expect: b
 
-c[2]; // expect runtime error: Invalid list index.
+c[2]; // expect runtime error: List index out of range.

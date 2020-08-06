@@ -65,6 +65,10 @@ static bool appendNative(int argCount, Value* args, Value* result, char errMsg[]
         *result = NIL_VAL;
         sprintf(errMsg, "append expected 2 argument but got %d.", argCount);
         return true;
+    } else if (!IS_LIST(*args)) {
+        *result = NIL_VAL;
+        sprintf(errMsg, "append expected the first argument to be a list.");
+        return true;
     }
     ObjList* list = AS_LIST(*args);
     Value item = *(args + 1);
@@ -103,20 +107,27 @@ static bool clockNative(int argCount, Value* args, Value* result, char errMsg[])
 static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Delete an item from a list at the given index. Every item past the
     // deleted item has it's index decreased by 1.
+    *result = NIL_VAL;
     if (argCount != 2) {
-        *result = NIL_VAL;
         sprintf(errMsg, "delete expected 2 argument but got %d.", argCount);
         return true;
-    }
-    Value list = *args;
-    Value index = *(args + 1);
-    if (!isValidListIndex(AS_LIST(list), index)) {
-        *result = NIL_VAL;
-        sprintf(errMsg, "invalid list index.");
+    } if (!IS_LIST(*args)) {
+        sprintf(errMsg, "delete expected the first argument to be a list.");
+        return true;
+    } else if (!IS_NUMBER(*(args + 1))) {
+        sprintf(errMsg, "append expected the second argument to be a number.");
         return true;
     }
-    deleteFromList(AS_LIST(list), AS_NUMBER(index));
-    *result = NIL_VAL;
+
+    ObjList* list = AS_LIST(*args);
+    int index = AS_NUMBER(*(args + 1));
+
+    if (!isValidListIndex(list, index)) {
+        sprintf(errMsg, "index you are trying to delete is out of range.");
+        return true;
+    }
+
+    deleteFromList(list, index);
     return false;
 }
 
@@ -653,25 +664,26 @@ static InterpretResult run() {
             Value result;
             if (IS_LIST(indexable)) {
                 ObjList* list = AS_LIST(indexable);
-                if (!isValidListIndex(list, index)) {
-                    runtimeError("Invalid list index.");
+                if (!IS_NUMBER(index)) {
+                    runtimeError("List index is not a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                } else if (!isValidListIndex(list, AS_NUMBER(index))) {
+                    runtimeError("List index out of range.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                Value* temp = indexFromList(list, AS_NUMBER(index));
-                if (temp == NULL) {
-                    runtimeError("Failed to index list.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-                result = *temp;
+                result = indexFromList(list, AS_NUMBER(index));
             } else if (IS_STRING(indexable)) {
                 ObjString* string = AS_STRING(indexable);
-                if (!isValidStringIndex(string, index)) {
-                    runtimeError("Invalid string index.");
+                if (!IS_NUMBER(index)) {
+                    runtimeError("String index is not a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                } else if (!isValidStringIndex(string, AS_NUMBER(index))) {
+                    runtimeError("String index out of range.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 result = indexFromString(string, AS_NUMBER(index));
             } else {
-                runtimeError("Invalid type for indexing.");
+                runtimeError("Invalid type to index into.");
                 return INTERPRET_RUNTIME_ERROR;
             }
             push(result);
@@ -681,15 +693,17 @@ static InterpretResult run() {
             Value item = pop();
             Value index = pop();
             Value list = pop();
-            if (!isValidListIndex(AS_LIST(list), index)) {
+            if (!IS_LIST(list)) {
+                runtimeError("Cannot store value in a non-list.");
+                return INTERPRET_RUNTIME_ERROR;
+            } else if (!IS_NUMBER(index)) {
+                runtimeError("List index is not a number.");
+                return INTERPRET_RUNTIME_ERROR;
+            } else if (!isValidListIndex(AS_LIST(list), AS_NUMBER(index))) {
                 runtimeError("Invalid list index.");
                 return INTERPRET_RUNTIME_ERROR;
             }
-            uint8_t err = storeToList(AS_LIST(list), AS_NUMBER(index), item);
-            if (err != 0) {
-                runtimeError("Failed to store to list");
-                return INTERPRET_RUNTIME_ERROR;
-            }
+            storeToList(AS_LIST(list), AS_NUMBER(index), item);
             push(item);
 
             break;

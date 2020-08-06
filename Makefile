@@ -1,6 +1,3 @@
-# TODO modify Makefile so that I can customize build flags for debug build
-# TODO include -D DEBUGGC somewhere in Makefile
-
 # To generate both a release and debug binary just run `make`
 
 SOURCE_DIR := src

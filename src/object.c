@@ -80,54 +80,37 @@ void appendToList(ObjList* list, Value value) {
 
 // TODO consolidate api interface here, error handling is a mess 
 
-uint8_t storeToList(ObjList* list, int index, Value value) {
+void storeToList(ObjList* list, int index, Value value) {
     // Change the value stored at a particular index in a list.
-    // It is invalid to change values at index greater than count.
-    // A non-zero value is returned if the index is invalid.
-    if (index > list->count - 1 || index < 0) {
-        return 1;
-    }
+    // Index is assumed to be valid.
     list->items[index] = value;
-    return 0;
 }
 
-Value* indexFromList(ObjList* list, int index) {
-    if (index > list->count - 1 || index < 0) {
-        return NULL;
-    }
-    return &(list->items[index]);
+Value indexFromList(ObjList* list, int index) {
+    // Index is assumed to be valid.
+    return list->items[index];
 }
 
-uint8_t deleteFromList(ObjList* list, int index) {
+void deleteFromList(ObjList* list, int index) {
     // TODO reduce capacity if count to capacity ratio gets too low
-    // A non-zero value is returned if the index is invalid.
-    if (index > list->count - 1 || index < 0) {
-        return 1;
-    }
-
+    // Index is assumed to be valid
     for (int i = index; i < list->count - 1; i++) {
         list->items[i] = list->items[i+1];
     }
     list->items[list->count - 1] = NIL_VAL;
 
     list->count--;
-    return 0;
 }
 
-// TODO seperate number check from range check for better errors 
-bool isValidListIndex(ObjList* list, Value index) {
-    if (!IS_NUMBER(index)) {
-        return false;
-    } else if (AS_NUMBER(index) < 0 || AS_NUMBER(index) > list->count - 1) {
+bool isValidListIndex(ObjList* list, int index) {
+    if (index < 0 || index > list->count - 1) {
         return false;
     }
     return true;
 }
 
-bool isValidStringIndex(ObjString* string, Value index) {
-    if (!IS_NUMBER(index)) {
-        return false;
-    } else if (AS_NUMBER(index) < 0 || AS_NUMBER(index) > string->length - 1) {
+bool isValidStringIndex(ObjString* string, int index) {
+    if (index < 0 || index > string->length - 1) {
         return false;
     }
     return true;

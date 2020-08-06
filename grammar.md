@@ -1,5 +1,7 @@
 SYNTAX GRAMMAR
 --------------
+
+```
 program        → declaration* EOF ;
 
 declaration    → funDecl | varDecl | statement ;
@@ -52,9 +54,12 @@ assigner       → "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" ;
 literal        → "true" | "false" | "nil"
                | STRING | NUMBER | "[" listDisplay? "]" ;
 listDisplay    → logic_or ( "," logic_or )* ( "," )? ;
+```
 
 LEXICAL GRAMMAR
 ---------------
+
+```
 STRING         → BASIC | TEMPLATE | RAW ;
 BASIC          → "'" <any char except un-escaped "'">* "'" ;
 TEMPLATE       → '"' <any char except un-escaped '"'>* '"' ;
@@ -63,5 +68,6 @@ NUMBER         → DIGIT+ ( "." DIGIT+ )? ;
 IDENTIFIER     → ALPHA ( ALPHA | DIGIT )* ;
 ALPHA          → 'a' ... 'z' | 'A' ... 'Z' | '_' ;
 DIGIT          → '0' ... '9' ;
+```
 
 4. Consolidate list object error interface 6. Seperate index checking 8. Pull out OP_INDEX_SUBSCR into a seperate function

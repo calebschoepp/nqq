@@ -85,14 +85,14 @@ ObjNative* newNative(NativeFn function);
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 Value indexFromString(ObjString* string, int index);
+bool isValidStringIndex(ObjString* list, int index);
 ObjUpvalue* newUpvalue(Value* slot);
 ObjList* newList();
 void appendToList(ObjList* list, Value value);
-uint8_t storeToList(ObjList* list, int index, Value value);
-Value* indexFromList(ObjList* list, int index);
-uint8_t deleteFromList(ObjList* list, int index);
-bool isValidListIndex(ObjList* list, Value index);
-bool isValidStringIndex(ObjString* list, Value index);
+void storeToList(ObjList* list, int index, Value value);
+Value indexFromList(ObjList* list, int index);
+void deleteFromList(ObjList* list, int index);
+bool isValidListIndex(ObjList* list, int index);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {
