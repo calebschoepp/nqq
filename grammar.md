@@ -69,5 +69,3 @@ IDENTIFIER     → ALPHA ( ALPHA | DIGIT )* ;
 ALPHA          → 'a' ... 'z' | 'A' ... 'Z' | '_' ;
 DIGIT          → '0' ... '9' ;
 ```
-
-4. Consolidate list object error interface 6. Seperate index checking 8. Pull out OP_INDEX_SUBSCR into a seperate function
