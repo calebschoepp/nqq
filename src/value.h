@@ -11,7 +11,7 @@ typedef enum {
     VAL_BOOL,
     VAL_NIL,
     VAL_NUMBER,
-    VAL_OBJ, // String, Function, Native, List
+    VAL_OBJ, // 1st Class: String, Function, Native, List
 } ValueType;
 
 typedef struct {

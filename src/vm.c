@@ -105,8 +105,8 @@ static bool clockNative(int argCount, Value* args, Value* result, char errMsg[])
 }
 
 static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Delete an item from a list at the given index. Every item past the
-    // deleted item has it's index decreased by 1.
+    // Delete an item from a list at the given index.
+    // Every item past the deleted item has it's index decreased by 1.
     *result = NIL_VAL;
     if (argCount != 2) {
         sprintf(errMsg, "delete expected 2 argument but got %d.", argCount);

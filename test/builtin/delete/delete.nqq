@@ -1,0 +1,7 @@
+let a = [1, 2, 3, [1, 'a', true]];
+delete(a, 0);
+print(a); // expect: [2, 3, [1, 'a', true]]
+delete(a, 2);
+print(a); // expect: [2, 3]
+
+delete(0, 1); // expect runtime error: delete expected the first argument to be a list.

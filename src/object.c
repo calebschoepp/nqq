@@ -78,8 +78,6 @@ void appendToList(ObjList* list, Value value) {
     return;
 }
 
-// TODO consolidate api interface here, error handling is a mess 
-
 void storeToList(ObjList* list, int index, Value value) {
     // Change the value stored at a particular index in a list.
     // Index is assumed to be valid.
