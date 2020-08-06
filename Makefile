@@ -18,7 +18,7 @@ LFLAGS     := -lm
 #
 # When MODE is defined modify CFLAGS and define BUILD_DIR appropriately
 ifeq ($(MODE),debug)
-	CFLAGS += -O0 -DDEBUG -g
+	CFLAGS += -O0 -g $(shell echo $$DEBUG | tr '[:lower:]' '[:upper:]' | tr '-' '_' | sed 's/[^ ]* */-D DEBUG_&/g')
 	BUILD_DIR := build/debug
 else
 	CFLAGS += -O3 -flto
@@ -57,7 +57,7 @@ clean:
 
 .PHONY: test
 test:
-	@ python3 util/test.py 
+	@ python3 util/test.py
 
 # Build targets ---------------------------------------------------------------
 
