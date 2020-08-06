@@ -7,6 +7,7 @@ DEBUG_BINARY := nqqd
 CC         := gcc
 CFLAGS     := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
 LFLAGS     := -lm
+DEFAULT_DEBUG := -D DEBUG_PRINT_CODE
 
 # The following variables are implicitly defined by recursive make calls.
 # e.g. @ $(MAKE) nqq MODE=release NAME=nqq
@@ -18,8 +19,13 @@ LFLAGS     := -lm
 #
 # When MODE is defined modify CFLAGS and define BUILD_DIR appropriately
 ifeq ($(MODE),debug)
-	CFLAGS += -O0 -DDEBUG -g
-	BUILD_DIR := build/debug
+	ifdef DEBUG
+		CFLAGS += -O0 -g $(shell echo $$DEBUG | tr '[:lower:]' '[:upper:]' | tr '-' '_' | sed 's/[^ ]* */-D DEBUG_&/g')
+		BUILD_DIR := build/debug
+	else
+		CFLAGS += -O0 -g $(DEFAULT_DEBUG)
+		BUILD_DIR := build/debug
+	endif
 else
 	CFLAGS += -O3 -flto
 	BUILD_DIR := build/release
@@ -57,7 +63,7 @@ clean:
 
 .PHONY: test
 test:
-	@ python3 util/test.py 
+	@ python3 util/test.py
 
 # Build targets ---------------------------------------------------------------
 
@@ -74,4 +80,4 @@ $(NAME): $(OBJECTS)
 $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
 	@ printf "%3s %s\n" $(CC) $<
 	@ mkdir -p $(BUILD_DIR)/$(NAME)
-	@ $(CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
