@@ -1,5 +1,7 @@
 SYNTAX GRAMMAR
 --------------
+
+```
 program        → declaration* EOF ;
 
 declaration    → funDecl | varDecl | statement ;
@@ -29,8 +31,9 @@ block          → "{" declaration* "}" ;
 
 expression     → assignment ;
 
-assignment     → ( call "." )? IDENTIFIER assigner assignment
-               | logic_or;
+assignment     → IDENTIFIER assigner assignment
+               | IDENTIFIER ( "[" logic_or "]" )+ "=" assignment
+               | logic_or ;
 
 logic_or       → logic_and ( "or" logic_and )* ;
 logic_and      → equality ( "and" equality )* ;
@@ -38,19 +41,25 @@ equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
 multiplication → unary ( ( "/" | "*" | "%" ) unary )* ;
-unary          → ( "!" | "-" ) unary | call ;
+unary          → ( "!" | "-" ) unary | power ;
 power          → call ( "**" call )* ;
-call           → primary ( "(" arguments? ")" )* ;
-primary        → "true" | "false" | "nil" | "this"
-               | NUMBER | STRING | IDENTIFIER | "(" expression ")" ;
+call           → subscript ( "(" arguments? ")" )* ;
+subscript      → primary ( "[" logic_or "]" )* ;
+primary        → literal | IDENTIFIER | "(" expression ")" ;
 
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 assigner       → "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" ;
+literal        → "true" | "false" | "nil"
+               | STRING | NUMBER | "[" listDisplay? "]" ;
+listDisplay    → logic_or ( "," logic_or )* ( "," )? ;
+```
 
 LEXICAL GRAMMAR
 ---------------
+
+```
 STRING         → BASIC | TEMPLATE | RAW ;
 BASIC          → "'" <any char except un-escaped "'">* "'" ;
 TEMPLATE       → '"' <any char except un-escaped '"'>* '"' ;
@@ -59,3 +68,4 @@ NUMBER         → DIGIT+ ( "." DIGIT+ )? ;
 IDENTIFIER     → ALPHA ( ALPHA | DIGIT )* ;
 ALPHA          → 'a' ... 'z' | 'A' ... 'Z' | '_' ;
 DIGIT          → '0' ... '9' ;
+```

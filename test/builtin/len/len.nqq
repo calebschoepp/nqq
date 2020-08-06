@@ -1,0 +1,13 @@
+let a = [1, 2, 'a', "b", `c`, true, false];
+print(len(a)); // expect: 7
+
+let b = 'abcd';
+print(len(b)); // expect: 4
+
+let c = '';
+print(len(c)); // expect: 0
+
+let d = [];
+print(len(d)); // expect: 0
+
+print(len(0)); // expect runtime error: len expected a list or string.

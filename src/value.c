@@ -21,10 +21,10 @@ void writeValueArray(ValueArray* array, Value value) {
        int oldCapacity = array->capacity;
        array->capacity = GROW_CAPACITY(oldCapacity);
        array->values = GROW_ARRAY(array->values, Value, oldCapacity, array->capacity);
-  }
+    }
 
-  array->values[array->count] = value;
-  array->count++;
+    array->values[array->count] = value;
+    array->count++;
 }
 
 void printValue(Value value) {
@@ -33,7 +33,7 @@ void printValue(Value value) {
         case VAL_NIL:    printf("nil"); break;
         case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
         case VAL_OBJ:    printObject(value); break;
-  }
+    }
 }
 
 bool valuesEqual(Value a, Value b) {
@@ -43,7 +43,23 @@ bool valuesEqual(Value a, Value b) {
         case VAL_BOOL:   return AS_BOOL(a) == AS_BOOL(b);
         case VAL_NIL:    return true;
         case VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
-        case VAL_OBJ:    return AS_OBJ(a) == AS_OBJ(b);
+        case VAL_OBJ: {
+            if (IS_LIST(a) && IS_LIST(b)) {
+                ObjList* al = AS_LIST(a);
+                ObjList* bl = AS_LIST(b);
+                if (al->count != bl->count) {
+                    return false;
+                }
+
+                for (int i = 0; i < al->count; i++) {
+                    if (!valuesEqual(al->items[i], bl->items[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return AS_OBJ(a) == AS_OBJ(b);
+        }
     }
 
     return false;

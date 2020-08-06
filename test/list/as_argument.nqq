@@ -1,0 +1,28 @@
+fun modifyList(l) {
+    l[0] = 'modified';
+}
+
+fun growList(l) {
+    append(l, true);
+}
+
+fun shrinkList(l) {
+    delete(l, 0);
+}
+
+let myList = [1, 2, 3, 4, 5];
+let refList = myList;
+print(myList); // expect: [1, 2, 3, 4, 5]
+print(refList); // expect: [1, 2, 3, 4, 5]
+
+modifyList(myList);
+print(myList); // expect: ['modified', 2, 3, 4, 5]
+print(refList); // expect: ['modified', 2, 3, 4, 5]
+
+growList(myList);
+print(myList); // expect: ['modified', 2, 3, 4, 5, true]
+print(refList); // expect: ['modified', 2, 3, 4, 5, true]
+
+shrinkList(myList);
+print(myList); // expect: [2, 3, 4, 5, true]
+print(refList); // expect: [2, 3, 4, 5, true]

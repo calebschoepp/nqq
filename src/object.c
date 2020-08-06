@@ -55,6 +55,70 @@ ObjNative* newNative(NativeFn function) {
     return native;
 }
 
+ObjList* newList() {
+    ObjList* list = ALLOCATE_OBJ(ObjList, OBJ_LIST);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+    return list;
+}
+
+void appendToList(ObjList* list, Value value) {
+    // Add an item to the end of a list.
+    // Length of list will grow by 1 from users perspective.
+    // Capacity of internal representation may or may not increase.
+    // Expects list and value are already trackable by GC i.e. on stack.
+    if (list->capacity < list->count + 1) {
+        int oldCapacity = list->capacity;
+        list->capacity = GROW_CAPACITY(oldCapacity);
+        list->items = GROW_ARRAY(list->items, Value, oldCapacity, list->capacity);
+    }
+    list->items[list->count] = value;
+    list->count++;
+    return;
+}
+
+void storeToList(ObjList* list, int index, Value value) {
+    // Change the value stored at a particular index in a list.
+    // Index is assumed to be valid.
+    list->items[index] = value;
+}
+
+Value indexFromList(ObjList* list, int index) {
+    // Index is assumed to be valid.
+    return list->items[index];
+}
+
+void deleteFromList(ObjList* list, int index) {
+    // TODO reduce capacity if count to capacity ratio gets too low
+    // Index is assumed to be valid
+    for (int i = index; i < list->count - 1; i++) {
+        list->items[i] = list->items[i+1];
+    }
+    list->items[list->count - 1] = NIL_VAL;
+
+    list->count--;
+}
+
+bool isValidListIndex(ObjList* list, int index) {
+    if (index < 0 || index > list->count - 1) {
+        return false;
+    }
+    return true;
+}
+
+bool isValidStringIndex(ObjString* string, int index) {
+    if (index < 0 || index > string->length - 1) {
+        return false;
+    }
+    return true;
+}
+
+Value indexFromString(ObjString* string, int index) {
+    ObjString* newString = copyString((char*)(string->chars + index), 1);
+    return OBJ_VAL(newString);
+}
+
 static ObjString* allocateString(char* chars, int length, uint32_t hash) {
     ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
     string->length = length;
@@ -119,6 +183,18 @@ static void printFunction(ObjFunction* function) {
     printf("<fn %s>", function->name->chars);
 }
 
+static void printList(ObjList* list) {
+    printf("[");
+    for (int i = 0; i < list->count - 1; i++) {
+        printValue(list->items[i]);
+        printf(", ");
+    }
+    if (list->count != 0) {
+        printValue(list->items[list->count - 1]);
+    }
+    printf("]");
+}
+
 void printObject(Value value) {
     switch (OBJ_TYPE(value)) {
         case OBJ_CLOSURE:
@@ -131,10 +207,12 @@ void printObject(Value value) {
             printf("<native fn>");
             break;
         case OBJ_STRING:
-            printf("%s", AS_CSTRING(value));
+            printf("'%s'", AS_CSTRING(value));
             break;
         case OBJ_UPVALUE:
             printf("upvalue");
             break;
+        case OBJ_LIST:
+            printList(AS_LIST(value));
     }
 }

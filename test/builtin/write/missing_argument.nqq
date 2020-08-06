@@ -1,0 +1,1 @@
+write(); // expect runtime error: write expected 1 argument but got 0.
