@@ -1,3 +1,5 @@
+# Adding a list type to an interpreted language
+
 # Intro 1
 
 If you've found your way to this post then it's likely you've at least heard of Robert Nystrom's fantastic book [Crafting Interpreters](https://craftinginterpreters.com/). For those of you who have finished reading it, congratulations! For those of you who haven't, you seriously need to drop everything and go read it! Robert does a great job of taking his readers from zero to hero and by the end of the book you'll have a deeper sense for how programming languages work and you'll have even built one yourself.
@@ -52,5 +54,73 @@ Notes
 - Actually say I implement the things?
 - Maybe just make that middle part a numbered list?
 ---
+
+# Semantics and Source Code
+
+We should start with the basics. A list literal can be defined like the following:
+
+```
+// Directly in an expression
+print [1, 2, 3]; // Expect: [1, 2, 3]
+
+// In an assignment
+let foo = ["a", "b", "c"]
+```
+
+It is common to see the items of large lists defined on multiple lines. In many languages it is idiomatic to add a trailing comma in this case. Our list will support this.
+
+```
+let foo = [
+    1,
+    2,
+    ...
+    25,
+];
+```
+
+If all we could with lists is define them at compile time then they would be pretty useless. Naturally, we should be able to access items in the list via an integer index. We'd also like to be able to store new values in the list at a specified index.
+
+```
+let foo = [1, 2];
+
+print foo[0]; // Expect: 1
+
+foo[0] = 2;
+
+print foo[0]; // Expect: 2
+```
+
+An important question is how the list will be passed as an argument to a function. We can either pass by value or by reference. We'll choose the latter. This means that a function can modify a list without needing to return a new list to overwrite the original.
+
+```
+fun modifyList(list) {
+    list[0] = 0;
+}
+
+let foo = [1, 2];
+modifyList(foo);
+print foo; // Expect: [0, 2]
+```
+
+Up to this point we've defined the semantics of something more like an array. That is, it has a fixed length which is set at compile time, and it contains only asingle type of value. To make this list a bit more "listy", let's start by saying it can store multiple value types.
+
+```
+let foo = [1, "b", false, add(1, 2)];
+```
+
+Now let's make the list a bit more dynamic. We'd like to be able to grow the list by adding items to end and by deleting items at specific indexes i.e. append and delete. To keep this post as simple as possible I opted for this functionality to exist as native functions instead of as bytecode operations. More on that later.
+
+```
+let foo = [1, 2, 3];
+
+print append(foo, 4); // Expect: nil
+// append returns nil because it modifies foo in place. Now foo = [1, 2, 3, 4]
+
+print delete(foo, 2); // Expect: nil
+// delete returns nil because it modifies foo in place. Now foo = [1, 2, 4]
+```
+
+Great work, users can now grow and shrink there lists as they wish. This concludes the semantics that we will be implementing in this post. A number of valuable list features have been left out for simplicities sake. These include, slicing lists `print foo[1:8];`, reverse indexing `print foo[-1];`, list type conversion (convert a string to a list etc.). For more details on some of these items you can checkout the [challenges](#challenges) section
+
 
 [^1]: In the Clox implementation parsing and compilation have actually been squeezed into a single step. Despite the fact that they are happening at the same time, they are still providing different functions. Parsing is all about turning a flat stream of tokens into a hiearchal structure that represents the intent of the computation. Compilation is about turning that structure into something that is easier and quicker to execute. By squishing these two steps into one we are essentially skipping building the AST. This has the possible benefits of being conceptually simpler and faster but inhibits static analysis of the code.
