@@ -1,1 +1,1 @@
-assert(true, false); // expect runtime error: assert expected 1 argument but got 2.
+assert(true, false); // expect runtime error: assert expected 1 arguments but got 2.

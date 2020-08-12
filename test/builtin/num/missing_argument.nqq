@@ -1,1 +1,1 @@
-num(); // expect runtime error: num expected 1 argument but got 0.
+num(); // expect runtime error: num expected 1 arguments but got 0.
