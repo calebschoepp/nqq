@@ -418,7 +418,7 @@ static InterpretResult run() {
             break;
         }
         case OP_BUILD_LIST: {
-            // Build a new list
+            // Before: [item1, item2, ..., itemN] After: [list]
             ObjList* list = newList();
             uint16_t itemCount;
             if (vm.nextOpWide == 1) {
@@ -441,7 +441,7 @@ static InterpretResult run() {
             break;
         }
         case OP_INDEX_SUBSCR: {
-            // before: [indexable, index] after: [index(indexable, index)]
+            // Before: [indexable, index] After: [index(indexable, index)]
             Value index = pop();
             Value indexable = pop();
             Value result;
@@ -473,6 +473,7 @@ static InterpretResult run() {
             break;
         }
         case OP_STORE_SUBSCR: {
+            // Before: [list, index, item] After: [item]
             Value item = pop();
             Value index = pop();
             Value list = pop();

@@ -96,7 +96,6 @@ void deleteFromList(ObjList* list, int index) {
         list->items[i] = list->items[i+1];
     }
     list->items[list->count - 1] = NIL_VAL;
-
     list->count--;
 }
 

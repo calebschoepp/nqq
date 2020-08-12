@@ -11,7 +11,6 @@
 bool nextOpWide = false;
 
 void disassembleChunk(Chunk* chunk, const char* name) {
-    // TODO add column headers
     int padLen = (TOTAL_WIDTH - 30 - strlen(name)) / 2;
     printf("===============%*s%s%*s===============\n", padLen, "", name, padLen, "");
     printf("BYTE  LINE  OPCODE            SLOT     LITERAL\n");
@@ -24,7 +23,6 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
-    // TODO avoid double quotes on strings somehow
     if (nextOpWide) {
         nextOpWide = false;
         uint16_t constant = chunk->code[offset + 1];
