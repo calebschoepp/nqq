@@ -1,31 +1,10 @@
 # Adding a list type to an interpreted language
 
-# Intro 1
+The following post is a detailed walkthrough of how to add a list data type to the interpreted programming language Clox. We'll be going over the entire implementation in detail with lot's of code snippets. Everything from the syntax grammar to garbage collection will be covered.
 
-If you've found your way to this post then it's likely you've at least heard of Robert Nystrom's fantastic book [Crafting Interpreters](https://craftinginterpreters.com/). For those of you who have finished reading it, congratulations! For those of you who haven't, you seriously need to drop everything and go read it! Robert does a great job of taking his readers from zero to hero and by the end of the book you'll have a deeper sense for how programming languages work and you'll have even built one yourself.
+Clox is the language you write in the fantastic book [Crafting Interpreters]() by [Bob Nystrom](). If you haven't read the book yet, I highly recommend it. This post assumes a high level of familiarty with Clox and Crafting Interpreters but should still be a valuable lesson on programming language design if you haven't read the book.
 
-Finishing the book can be a little intimidating though, especially when you want to keep working on the programming language you were building, Clox. That was my experience. Sure, after reading the book I could whip up a parser and was accquainted with garbage collection — but I certainly didn't feel prepared to keep adding features to Clox. I missed the comfort of Robert's witty writing, delightful drawings, and copious code-snippets.
-
-I'm here to help if even only in a small way. You see, I did eventually muster the courage to add a feature to my version of Clox. I added a list data type, and once I'd finished adding the feature I realized it wasn't actually so hard. Turns out Crafting Interpreters taught us a lot more then we thought it did. And if I can add something like lists to Clox then so can you.
-
-Notes
----
-Notes, maybe too heavy of a focus on this being only applicable to readers of Crafting Interpreters... Maybe mention it but focus more on the general concept of adding a list data type to a bytecode interpreted language.
-
-### Possible intro 1
-- This post will show full process of how to add list data type to an interpreted language
-- Will be using Clox from crafting interpreters as a base.
-- I was inspired to write this because I was lost after reading his book and couldn't find any resources
-
-### Possible intro 2
-- This post will show full process of how to add list data type to an interpreted language
-- The language I'm adding it to is Clox (footnote nqq); talk about Clox and Crafting interpreters at a high level
-- I'm really writing this for the following persona
-- Joma, who just finished Crafting interpreters and is a bit confused on where to go next with building the language. Missing the comfort of Robert and the book
-- But you might also find it useful if you are X, Y, Z
-- You should go read the book
-
----
+My hope is that this post will help give you the confidence to keep adding features to Clox. When I finished the Crafting Interpreters I certainly didn't feel qualified to keep working on the language myself. I missed the comfort of Robert's witty writing, delightful drawings, and copious code-snippets. Eventually, I got over that and so can you. If I can add something like lists to Clox then so can you.
 
 # Overview
 
@@ -290,12 +269,191 @@ case OP_STORE_SUBSCR: {
 
 And that concludes designing the opcodes for lists in Clox. For a full implementation be sure to update `debug.c` with switch-cases for the new opcodes.
 
-# 
+# The Power of Parsing
 
-Up until this point are interpreter still can't handle lists end to end. Hypothetically, if we hand compiled some bytecode the interpreter could execute it. But, hand compiling is no fun, so let's automate it.
+Up until this point our interpreter still can't handle lists end to end. Hypothetically, if we hand compiled some bytecode the interpreter could execute it. But, hand compiling is no fun, so let's automate it.
 
-This is going to require getting a little bit more formal about our syntax and lexical grammars. 
+This is going to require getting a little bit more formal about our syntax's [grammar](https://craftinginterpreters.com/appendix-i.html). I've shown an excerpt of the grammar below that includes the modifications we will be making.
+
+```plain
+...
+
+assignment     → ( call "." )? IDENTIFIER ( "[" logic_or "]" )* "=" assignment
+               | logic_or ;
+
+...
+
+call           → subscript ( "(" arguments? ")" | "." IDENTIFIER )* ;
+subscript      → primary ( "[" logic_or "]" )* ;
+primary        → "true" | "false" | "nil" | "this"
+               | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+               | "super" "." IDENTIFIER | "[" list_display? "]" ;
+
+list_display    → logic_or ( "," logic_or )* ( "," )? ;
+
+...
+```
+
+The biggest change is that we have added a list literal to the `primary` rule. It uses the utility rule `list_display` which accepts multiple comma seperated items. The items are any valid expression except for an assignment. `list_display` also supports an optional trailing comma like we wanted.
+
+To support indexing from lists, we've added a new rule `subscript`. It has a higher precedence then call so that you could as an example index into a list for a function and call it (`myFunctions[0]()`). For storing to lists we updated the `assignment` rule. For both, a valid index is any expression excpet an assignment.
+
+With a formal grammar in hand, we can tie this new feature into our parser. First we add two new rules to the Pratt parsing table. When we encounter a `[` in a prefix scenario we parse a list literal. An infix `[` kicks off parsing of a subscript (index or store).
+
+```c++
+{ list, subscript, PREC_SUBSCRIPT }, // TOKEN_LEFT_BRACKET
+{ NULL, NULL,      PREC_NONE },      // TOKEN_RIGHT_BRACKET
+```
+
+Below is the code to parse and compile a list literal. By the time `list` is entered the left bracket has already been consumed. If it doesn't immediatley find a right bracket it starts comma seperated items one at a time. Each cycle it verifies it isn't just at a trailing comma. Finally it emits an `OP_BUILD_LIST` and the `itemCount` operand.
+
+```c++
+static void list(bool canAssign) {
+    int itemCount = 0;
+    if (!check(TOKEN_RIGHT_BRACKET)) {
+        do {
+            if (check(TOKEN_RIGHT_BRACKET)) {
+                // Trailing comma case
+                break;
+            }
+
+            parsePrecedence(PREC_OR);
+
+            if (itemCount == UINT8_COUNT) {
+                error("Cannot have more than 256 items in a list literal.");
+            }
+            itemCount++;
+        } while (match(TOKEN_COMMA));
+    }
+
+    consume(TOKEN_RIGHT_BRACKET, "Expect ']' after list literal.");
+
+    emitByte(OP_BUILD_LIST);
+    emitByte(itemCount);
+
+    return;
+}
+```
+
+The code is a bit simpler for a subscript. First it parse the index via `parsePrecedence(PREC_OR)`. Then if it sees an equal sign it knows it needs to emit an `OP_STORE_SUBSCR`. Otherwise a `OP_INDEX_SUBSCR` is emitted.
+
+```c++
+static void subscript(bool canAssign) {
+    parsePrecedence(PREC_OR);
+    consume(TOKEN_RIGHT_BRACKET, "Expect ']' after index.");
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emitByte(OP_STORE_SUBSCR);
+    } else {
+        emitByte(OP_INDEX_SUBSCR);
+    }
+    return;
+}
+```
+
+Naturally, the parser expects that the source code has already been tokenized by the scanner. To make lists work we need to handle the cases for two new tokens. Thanks to the good design of Clox adding this is trivial.
+
+```c++
+case '[': return makeToken(TOKEN_LEFT_BRACKET);
+case ']': return makeToken(TOKEN_RIGHT_BRACKET);
+```
 
 
+Notes
+-----
+- assignment grammar is wrong I think
+-----
+
+# The Rest of It
+
+Alright, let's come up for air because that was a lot of code. We should be proud of ourselves though we just worked through an end to end implementation of a new data type. Lists will certainly make programming in Clox much nicer.
+
+The astute reader may have realized that we are still missing a few key parts of the implementation to really be call it done. In fact we still need to do two things: implement `append` and `delete` functions, and update the garbage collector.
+
+## Append and Delete
+
+`append` and `delete` will be available to the user through the native functions interface. Both functions are simple wrappers around the runtime we have already built earlier in the post. Notably, the Clox native function interface does not handle errors so this has been left as an exercise to the reader.
+
+```c++
+static Value appendNative(int argCount, Value* args) {
+    // Append a value to the end of a list increasing the list's length by 1
+    if (argCount != 2 || !IS_LIST(*args)) {
+        // Handle error
+    }
+    ObjList* list = AS_LIST(*args);
+    Value item = *(args + 1);
+    appendToList(list, item);
+    return NIL_VAL;
+}
+
+static Value deleteNative(int argCount, Value* args) {
+    // Delete an item from a list at the given index.
+    // Every item past the deleted item has it's index decreased by 1.
+    if (argCount != 2 || !IS_LIST(*args) || !IS_NUMBER(*(args + 1))) {
+        // Handle error
+    }
+
+    ObjList* list = AS_LIST(*args);
+    int index = AS_NUMBER(*(args + 1));
+
+    if (!isValidListIndex(list, index)) {
+        // Handle error
+    }
+
+    deleteFromList(list, index);
+    return NIL_VAL;
+}
+```
+
+## Garbage Collection
+
+Of all the parts of this implementation, ensuring that garbage collection was working correctly was what I found to be the most difficult. On it's face it is relatively simple. To wire up lists to the collector we just needed to handle two switch-cases in `memory.c`. In `blackenObject` all we need to do is mark every item in the list.
+
+```c++
+case OBJ_LIST: {
+    ObjList* list = (ObjList*)object;
+    for (int i = 0; i < list->count; i++) {
+        markValue(list->items[i]);
+    }
+    break;
+}
+```
+In `freeObject` we want to release the memory of the list as it is no longer needed. This requires both freeing the dynamic array and the object itself.
+
+```c++
+case OBJ_LIST: {
+    ObjList* list = (ObjList*)object;
+    FREE_ARRAY(Value*, list->items, list->count);
+    FREE(ObjList, object);
+    break;
+}
+```
+
+The devil is in the details with garbage collection. After multiple days of testing and careful inspection of the code I found two bugs in my implementation. The fixes have already been included in the code of this post but I'll outline the bugs anyways.
+
+1. In the `OBJ_LIST` switch-case of `freeObject` I was only freeing the dynamic array. By forgetting to free the object itself I had introduced a memory leak.
+
+2. You may have noticed the peculiar `pop` and `push` statements for `OP_BUILD_LIST`. Those are there because `appendList` allocates memory which may kick off a garbage collection. Since `list` isn't rooted anywhere it would get sweeped away. Pushing it onto the stack prevents that.
+
+```c++
+push(OBJ_VAL(list)); // So list isn't sweeped by GC in appendToList
+for (int i = itemCount; i > 0; i--) {
+    appendToList(list, peek(i));
+}
+pop();
+```
+
+# Challenges
+
+Congratulations! We've just finished a complete implementation of a performant list data type. This is no small feat. Programming in Clox will certainly be a lot easier now that we can store lists of data. If you are looking for more things to explore beyond what we've gone over in this post then you are in luck. Following in the footsteps of Crafting Interpreters, I've included some challenges below. Thanks for reading!
+
+1. More fully featured languages often present a wider variety of ways to access items in a list. This includes negative indexing and slicing. Negative indexing is quite simple; an index of `-1` accesses the last item, `-2` the second last, and so forth. Slicing allows a user to easily extract and operate on portions of a list. In Python something like `myList[2:8:2]` would take every second item of the list starting at index `2` and going to index `8`. Add negative indexing and a native function with the signature `Value slice(start, stop, step)` to Clox.
+
+2. Making `append` and `delete` native functions was the easiest to implement but is uncommon in other languages. Two other options exist. These could be keywords that form a statement e.g. `del foo[0]`. This statement would then be compiled down into some new opcodes. Alternatively, append and delete could be made into methods on a list object. This would require some more rewiring of Clox but would perhaps be more idiomatic. Pick the approach you prefer and try implementing it.
+
+3. Most languages have a unified theory on iterable types. This includes how you work with lists/arrays, iterators, strings, generators and more. Currently, our implementation is pretty lacking in this area. Research on how other languages implement iterators and try adding them to Clox. Additionally, try adding the ability to index individual characters of a Clox string.
+
+4. The current implementation of `delete` only removes an item and reshuffles the content in the array as necessary. Hypothetically, if a very large list was deleted from enough then it would have too much memory allocated to it for the number of items it is storing. Try adding some logic to `delete` to deallocate memory when the number of list items becomes small enough.
 
 [^1]: In the Clox implementation parsing and compilation have actually been squeezed into a single step. Despite the fact that they are happening at the same time, they are still providing different functions. Parsing is all about turning a flat stream of tokens into a hiearchal structure that represents the intent of the computation. Compilation is about turning that structure into something that is easier and quicker to execute. By squishing these two steps into one we are essentially skipping building the AST. This has the possible benefits of being conceptually simpler and faster but inhibits static analysis of the code.
