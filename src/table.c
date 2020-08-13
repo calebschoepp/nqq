@@ -6,9 +6,6 @@
 #include "table.h"
 #include "value.h"
 
-#include <stdio.h>
-
-
 #define TABLE_MAX_LOAD 0.75 // TODO tune this value
 
 void initTable(Table* table) {
@@ -22,8 +19,77 @@ void freeTable(Table* table) {
     initTable(table);
 }
 
+uint32_t hashBytes(uint8_t* key, int length) {
+    uint32_t hash = 2166136261u;
+
+    for (int i = 0; i < length; i++) {
+        hash ^= key[i];
+        hash *= 16777619;
+    }
+
+    return hash;
+}
+
+static uint32_t hashObject(Obj* obj) {
+    // TODO confirm the hashes are fine and there are minimal collisions
+    switch (obj->type) {
+    case OBJ_CLOSURE: {
+        // Not a 1st class citizen
+        // Shouldn't reach here
+        break;
+    }
+    case OBJ_FUNCTION: {
+        return (uint32_t)((uint64_t)obj & 0x0000ffff);
+    }
+    case OBJ_LIST: {
+        // Not hashable
+        // Shouldn't reach here
+        break;
+    }
+    case OBJ_NATIVE: {
+        return (uint32_t)((uint64_t)obj & 0x0000ffff);
+    }
+    case OBJ_STRING: {
+        // Cached
+        // Shouldn't reach here
+        break;
+    }
+    case OBJ_UPVALUE: {
+        // Not a 1st class citizen
+        // Shouldn't reach here
+        break;
+    }
+    default:
+        break;
+    }
+    // Shouldn't reach here
+    return 0;
+}
+
 static uint32_t hashValue(Value value) {
-    // TODO
+    switch (value.type) {
+    case VAL_BOOL: {
+        if (AS_BOOL(value)) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    case VAL_NIL: {
+        // TODO this may be the incorrect thing to hash to
+        // TODO add a test case that the map {nil: 1, 2: 3} works fine
+        return 2;
+    }
+    case VAL_NUMBER: {
+        return (uint32_t)AS_NUMBER(value);
+    }
+    case VAL_OBJ: {
+        return hashObject(AS_OBJ(value));
+    }
+    default:
+        break;
+    }
+    // Shouldn't reach here
     return 0;
 }
 
@@ -58,6 +124,7 @@ static Entry* findEntry(Entry* entries, int capacity, Value key) {
 }
 
 bool tableGet(Table* table, Value key, Value* value) {
+    // TODO check the key is hashable Value
     if (table->count == 0) return false;
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
@@ -93,6 +160,7 @@ static void adjustCapacity(Table* table, int capacity) {
 }
 
 bool tableSet(Table* table, Value key, Value value) {
+    // TODO check the key is hashable Value
     if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacity);
         adjustCapacity(table, capacity);
@@ -109,6 +177,7 @@ bool tableSet(Table* table, Value key, Value value) {
 }
 
 bool tableDelete(Table* table, Value key) {
+    // TODO check the key is hashable Value
     if (table->count == 0) return false;
 
     // Find the entry

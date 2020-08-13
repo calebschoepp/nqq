@@ -51,6 +51,9 @@ typedef struct {
     NativeFn function;
 } ObjNative;
 
+// Note: hash is cached for strings because a) strings are immutable so the hash
+// will never change b) string lookups are a very frequent action in Clox and
+// we want it to be as quick as possible.
 struct sObjString {
     Obj obj;
     int length;

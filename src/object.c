@@ -131,20 +131,9 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
     return string;
 }
 
-static uint32_t hashString(const char* key, int length) {
-    uint32_t hash = 2166136261u;
-
-    for (int i = 0; i < length; i++) {
-        hash ^= key[i];
-        hash *= 16777619;
-    }
-
-    return hash;
-}
-
 // Copy a string to strings table and take ownership of memory
 ObjString* takeString(char* chars, int length) {
-    uint32_t hash = hashString(chars, length);
+    uint32_t hash = hashBytes((uint8_t*)chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
     if (interned != NULL) {
         FREE_ARRAY(char, chars, length + 1);
@@ -155,7 +144,7 @@ ObjString* takeString(char* chars, int length) {
 
 // Copy a string to strings table without taking ownership of memory
 ObjString* copyString(const char* chars, int length) {
-    uint32_t hash = hashString(chars, length);
+    uint32_t hash = hashBytes((uint8_t*)chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
     if (interned != NULL) return interned;
 
