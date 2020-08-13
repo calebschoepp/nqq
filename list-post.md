@@ -106,13 +106,13 @@ Great work, users can now grow and shrink there lists as they wish. This conclud
 
 # Building a Runtime
 
-Having determined the behavior of the lists, we now need to figure out how the interpreter will actually store and operate on them. The runtime is where the rubber hits the road. If the list component of the runtime is poorly written and slow, then you can be sure that lists will be slow in the language too. Considering this, how should we implement lists in Clox? Two data structures immediatley come to mind: dynamic arrays and linked lists.
+Now that we know what semantics lists should have, we need to update the interpreters runtime to make it happen. This is where the rubber hits the road. The runtime is just some C code that does the work of excuting our Clox source code. If the runtime for lists is slow, then you can be sure that lists will be slow in Clox too. Considering this, how should we implement the list runtime? Two data structures immediatley come to mind: dynamic arrays and linked lists.
 
-Let's examine linked lists first. This data structure consists of a number of nodes connected in one direction via pointers — each object has a pointer to the next object in the list. You may recall that a linked list was used in the implementation of Clox to link all the objects together for garbage collection. Leaving the formal proofs for another time a linked list gives us O(n) item access; O(1) item insertion; and O(1) item deletion.
+Let's examine linked lists first. This data structure consists of a number of nodes where each node has a pointer to the next node in the list. You may recall that a linked list was used in the implementation of Clox to link all the objects together for garbage collection. Leaving the formal proofs for another time a linked list has the following algorithmic complexities; `O(n)` to access or modify an item; `O(1)` to append an item to the list; `O(n)` to delete an item.
 
-We should note that the stated insertion/deletion complexities assume that you are already holding a pointer to the location you are inserting/deleting into. This is not the case in our runtime as we would only be storing a pointer to the root of the list. Considering this we have O(n) across all operations — not great at all. The final nail in the coffin for linked lists is that the nodes aren't guarenteed to exist in contigous sections of memory. Scattered memory means terrible cache locality and as a result slow speeds.
+`O(n)` to access or modify an item presents an issue. That is a hefty cost to pay for such a common action. The final nail in the coffin for linked lists is that the nodes aren't guarenteed to exist in contigous sections of memory. Scattered memory means terrible cache locality and as a result slow speeds.
 
-Maybe dynamic arrays will have more favourable characteristics. Spoiler, it does. Dynamic arrays have been used all across the implementation of Clox. The implementation is quite simple. It is nothing more than a simple array with some additional metadata allowing the program to track when the array should grow. Growing the array is as simple as allocating a larger block of memory and copying all of the data over. Moving on to the algorithmic complexity we see O(1) item access; O(1).....TODODODO. Additionally, because an array is contiguous memory we see much better cache locality. All things considered a dynamic array is a better fit for our list implementation.
+Maybe dynamic arrays will have more favourable characteristics. Spoiler, they do. Dynamic arrays have been used all across the implementation of Clox and the implementation is simple. It's nothing more than a standard array with some additional metadata tracking when the array should grow. To grow the array it just allocates a large block of memory and copies the values over. For algorithmic complexities it has; `O(1)` to access or modify an item; `O(1)` (ammortized) to append an item to the end of the list; `O(n)` to delete an item. Finally, because an array is a section of contiguous memory we see much better cache locality. All things considered a dynamic array is a better fit for our list implementation.
 
 To make the dynamic array cooperate with the rest of Clox we will define a new `ObjList` struct that extends the base `obj` struct in `object.h`. Remember that in the Clox implementation an object is just a subtype of Clox value. Other examples of objects include strings, functions, etc.
 
@@ -125,7 +125,7 @@ typedef struct {
 } ObjList;
 ```
 
-Now let's add the associated functionality of lists to `object.c`. We need functions for retrieving, storing, appending, and deleting items in the list. Additionally, we need a function to build a new list for us and a helper function to verify indices might be nice too. It is a lot of code but keep in mind the functions are mostly simple wrappers around a C array.
+Now let's add the associated functionality of lists to `object.c`. We need functions for retrieving, storing, appending, and deleting items in the list. A function to build a new list for us. And a helper function to verify indices might be nice too. It's a lot of code, but keep in mind we're basically just writing a wrapper around a dynamic array.
 
 ```c++
 ObjList* newList() {
@@ -137,10 +137,7 @@ ObjList* newList() {
 }
 
 void appendToList(ObjList* list, Value value) {
-    // Add an item to the end of a list.
-    // Length of list will grow by 1 from users perspective.
-    // Capacity of internal representation may or may not increase.
-    // Expects list and value are already trackable by GC i.e. on stack.
+    // Grow the array if necessary
     if (list->capacity < list->count + 1) {
         int oldCapacity = list->capacity;
         list->capacity = GROW_CAPACITY(oldCapacity);
@@ -152,18 +149,14 @@ void appendToList(ObjList* list, Value value) {
 }
 
 void storeToList(ObjList* list, int index, Value value) {
-    // Change the value stored at a particular index in a list.
-    // Index is assumed to be valid.
     list->items[index] = value;
 }
 
 Value indexFromList(ObjList* list, int index) {
-    // Index is assumed to be valid.
     return list->items[index];
 }
 
 void deleteFromList(ObjList* list, int index) {
-    // Index is assumed to be valid
     for (int i = index; i < list->count - 1; i++) {
         list->items[i] = list->items[i+1];
     }
@@ -181,20 +174,13 @@ bool isValidListIndex(ObjList* list, int index) {
 
 Still with me? Fantastic, because we just implemented the entire runtime for lists. Not too shabby. Note that if you are following along with your own implementation there are still a few things you'll need to add. Notably, type checking macros like `IS_LIST`, function declarations in `object.h` and code to print our new list object.
 
-Notes
----
-- Make algo complexity actually match use cases of append, delete, index
-- Should I seperate the different functions?
-- Code highlight complexity
----
-
 # Operation Opcode
 
-Clox is a bytecode interpreter. That means it compiles source code into a stream of opcodes which it then executes. In order for lists to work we will need to add some new opcodes to Clox. Clox's VM is responsible for decoding the opcode and leveraging the runtime to produce the desired effect. 
+Clox is a bytecode interpreter. This means it compiles source code into a stream of bytecdoe which it's VM can then execute. Bytecode consists of a number of opcodes (instructions) with optional operands (arguments). To implement lists we will need to add some new types of opcodes to Clox. Clox's VM is responsible for tying the bytecode together with the runtime.
 
-The key to designing the opcodes for a new feature is to K.I.S.S. — Keep It Simple Stupid. That is to say, if the current set of opcodes can already support the new semantics you want, then do not add more opcodes. If you aren't that lucky, then try to find the minimal number of opcodes you can add to support the semantics. Minimizing the possible number of opcodes simplifies implementation and helps you keep the common case fast. This comes at the cost of extra overhead decoding the opcodes because less specific opcodes means you need more of them to achieve the same result. From my perspective this is a good tradeoff.
+The key to designing opcodes for a new feature is to K.I.S.S. — Keep It Simple Stupid. That is to say, if the languages current set of opcodes can already support the new semantics you want, then do not add more opcodes. If you aren't that lucky, then try to find the minimal number of opcodes you can add to support the new semantics. Minimizing the number of different opcodes simplifies the implementation and helps you keep the common case fast. All of the new semantics we are adding to Clox can be achieved by only three new opcodes: `OP_BUILD_LIST`, `OP_INDEX_SUBSCR`, and `OP_STORE_SUBSCR`.
 
-Many parts of this implementation including the grammar and semantics are heavily influenced by the desing of Python. The opcodes are no exception. All of the new semantics we are adding to Clox can be achieved by only three new opcodes: `OP_BUILD_LIST`, `OP_INDEX_SUBSCR`, and `OP_STORE_SUBSCR`.
+Many parts of this design and implementation are heavily influenced by Python. This includes the semantics and syntax grammar. The opcodes are no exception and mirror the opcodes Python uses for it's list data type.
 
 `OP_BUILD_LIST` does the obvious thing. Notably, the opcode takes an operand `itemCount` that is the number of values on the stack that it should build into the list. Because of the way the source code is compiled it peeks at the items in reverse order and then pops all the items from the stack. When it is finished it pushes the newly built list onto the stack. Here is the switch-case for it in `vm.c`:
 
@@ -218,7 +204,7 @@ case OP_BUILD_LIST: {
 }
 ```
 
-`OP_INDEX_SUBSCR` stands for *index subscript* — meaning access an item at a particular index. It's corresponding code in the VM is simple and only looks complex due to a plethora of error handling. Simply put, it pops a list and index off of the stack, runs `indexFromList` and pushes the resulting value back on the stack.
+`OP_INDEX_SUBSCR` stands for *index subscript* — meaning access an item at a particular index. It's corresponding code in `vm.h` looks complex, but this is only because of a plethora of error handling. All it actually does is pop a list and index off of the stack, run `indexFromList` and push the resulting value back on the stack.
 
 ```c++
 case OP_INDEX_SUBSCR: {
@@ -245,7 +231,7 @@ case OP_INDEX_SUBSCR: {
 }
 ```
 
-`OP_STORE_SUBSCR` of course means *store subscript*. Instead of pulling a value from the list, this time, we are storing a value in the list. Again, this is a simple thing made verbose by error handling. A list, index, and item are popped from the stack. The item is then stored in the list at the particular index.
+`OP_STORE_SUBSCR` of course means *store subscript*. Instead of pulling a value from the list, we are storing a value to the list. Again, the error handling makes a simple task look complicated. A list, index, and item are popped from the stack. The item is then stored in the list at the particular index.
 
 ```c++
 case OP_STORE_SUBSCR: {
@@ -269,13 +255,13 @@ case OP_STORE_SUBSCR: {
 }
 ```
 
-And that concludes designing the opcodes for lists in Clox. For a full implementation be sure to update `debug.c` with switch-cases for the new opcodes.
+And that concludes designing the new opcodes for lists in Clox. For a full implementation be sure to update `debug.c` with switch-cases for the new opcodes.
 
 # The Power of Parsing
 
-Up until this point our interpreter still can't handle lists end to end. Hypothetically, if we hand compiled some bytecode the interpreter could execute it. But, hand compiling is no fun, so let's automate it.
+Up until this point our interpreter still can't handle lists end to end. Hypothetically, the interpreter could execute some hand compiled bytecode. But, hand compiling is no fun, so let's automate it.
 
-This is going to require getting a little bit more formal about our syntax's [grammar](https://craftinginterpreters.com/appendix-i.html). I've shown an excerpt of the grammar below that includes the modifications we will be making.
+First we need to be a bit more formal about our syntax's [grammar](https://craftinginterpreters.com/appendix-i.html). I've shown an excerpt of the grammar below that includes the modifications we will be making.
 
 ```plain
 ...
@@ -296,18 +282,18 @@ list_display    → logic_or ( "," logic_or )* ( "," )? ;
 ...
 ```
 
-The biggest change is that we have added a list literal to the `primary` rule. It uses the utility rule `list_display` which accepts multiple comma seperated items. The items are any valid expression except for an assignment. `list_display` also supports an optional trailing comma like we wanted.
+The biggest change is that we have added a list literal to the `primary` rule. It uses the utility rule `list_display` which accepts multiple comma seperated items. The items are any valid expression except for an assignment as indicated by using `logic_or`. `list_display` also supports an optional trailing comma like we wanted with the snippet `( "," )?`.
 
-To support indexing from lists, we've added a new rule `subscript`. It has a higher precedence then call so that you could as an example index into a list for a function and call it (`myFunctions[0]()`). For storing to lists we updated the `assignment` rule. For both, a valid index is any expression excpet an assignment.
+To support indexing from lists, we've added a new rule `subscript`. It has a higher precedence then `call`. This allows things like indexing into a list for a function and then calling it `myFunctions[0]()`. For storing to lists we updated the `assignment` rule. In both accessing and storing items in a list, a valid index is any expression except an assignment again indicated by `logic_or`.
 
-With a formal grammar in hand, we can tie this new feature into our parser. First we add two new rules to the Pratt parsing table. When we encounter a `[` in a prefix scenario we parse a list literal. An infix `[` kicks off parsing of a subscript (index or store).
+With a formal grammar in hand, we can tie this new feature into `compiler.c`. First, we add two new rules to the Pratt parsing table. When we encounter a `[` in a prefix scenario we parse a list literal. Seeing an infix `[` kicks off parsing of a subscript (index or store).
 
 ```c++
 { list, subscript, PREC_SUBSCRIPT }, // TOKEN_LEFT_BRACKET
 { NULL, NULL,      PREC_NONE },      // TOKEN_RIGHT_BRACKET
 ```
 
-Below is the code to parse and compile a list literal. By the time `list` is entered the left bracket has already been consumed. If it doesn't immediatley find a right bracket it starts comma seperated items one at a time. Each cycle it verifies it isn't just at a trailing comma. Finally it emits an `OP_BUILD_LIST` and the `itemCount` operand.
+Below is the code to parse and compile a list literal. By the time the `list` rule is entered the left bracket has already been consumed. If it doesn't immediatley find a right bracket it starts parsing comma seperated items one at a time. There is also an if statement to ensure it doesn't try to parse an item after a trailing comma. Finally it emits an `OP_BUILD_LIST` and the `itemCount` operand.
 
 ```c++
 static void list(bool canAssign) {
@@ -337,7 +323,7 @@ static void list(bool canAssign) {
 }
 ```
 
-The code is a bit simpler for a subscript. First it parse the index via `parsePrecedence(PREC_OR)`. Then if it sees an equal sign it knows it needs to emit an `OP_STORE_SUBSCR`. Otherwise a `OP_INDEX_SUBSCR` is emitted.
+The code is simpler for the `subscript` rule. First, it parses the index via `parsePrecedence(PREC_OR)`. Then, if it sees an equal sign it knows it needs to emit an `OP_STORE_SUBSCR`. Otherwise an `OP_INDEX_SUBSCR` is emitted.
 
 ```c++
 static void subscript(bool canAssign) {
@@ -361,21 +347,13 @@ case '[': return makeToken(TOKEN_LEFT_BRACKET);
 case ']': return makeToken(TOKEN_RIGHT_BRACKET);
 ```
 
+# Finishing Up
 
-Notes
------
-- assignment grammar is wrong I think
------
-
-# The Rest of It
-
-Alright, let's come up for air because that was a lot of code. We should be proud of ourselves though we just worked through an end to end implementation of a new data type. Lists will certainly make programming in Clox much nicer.
-
-The astute reader may have realized that we are still missing a few key parts of the implementation to really be call it done. In fact we still need to do two things: implement `append` and `delete` functions, and update the garbage collector.
+Alright, let's come up for air. That was a lot of code. We should be proud of ourselves though, we just worked through an end to end implementation of a new data type. Unfortunately, we are still missing a few key parts of the implementation before we can call it done. We need to do two things: implement `append` and `delete` functions, and update the garbage collector.
 
 ## Append and Delete
 
-`append` and `delete` will be available to the user through the native functions interface. Both functions are simple wrappers around the runtime we have already built earlier in the post. Notably, the Clox native function interface does not handle errors so this has been left as an exercise to the reader.
+`append` and `delete` will be available to the user through the native function interface. Both functions are simple wrappers around the runtime we built earlier in the post. The Clox native function interface does not currently handle errors so this has been left as an exercise to the reader. Here is the code in `vm.c`.
 
 ```c++
 static Value appendNative(int argCount, Value* args) {
@@ -391,7 +369,6 @@ static Value appendNative(int argCount, Value* args) {
 
 static Value deleteNative(int argCount, Value* args) {
     // Delete an item from a list at the given index.
-    // Every item past the deleted item has it's index decreased by 1.
     if (argCount != 2 || !IS_LIST(*args) || !IS_NUMBER(*(args + 1))) {
         // Handle error
     }
@@ -410,7 +387,7 @@ static Value deleteNative(int argCount, Value* args) {
 
 ## Garbage Collection
 
-Of all the parts of this implementation, ensuring that garbage collection was working correctly was what I found to be the most difficult. On it's face it is relatively simple. To wire up lists to the collector we just needed to handle two switch-cases in `memory.c`. In `blackenObject` all we need to do is mark every item in the list.
+Ensuring that garbage collection was working correctly was the most difficult part of the implementation. On it's face it is relatively simple task. To wire up lists to the collector we just needed to handle two switch-cases in `memory.c`. In `blackenObject` all we need to do is mark every item in the list.
 
 ```c++
 case OBJ_LIST: {
@@ -432,11 +409,11 @@ case OBJ_LIST: {
 }
 ```
 
-The devil is in the details with garbage collection. After multiple days of testing and careful inspection of the code I found two bugs in my implementation. The fixes have already been included in the code of this post but I'll outline the bugs anyways.
+The devil is in the details with garbage collection. After multiple days of testing and careful inspection of the code I found two bugs in my implementation. The fixes have already been included in the code of this post but I'll outline the bugs for your benefit.
 
-1. In the `OBJ_LIST` switch-case of `freeObject` I was only freeing the dynamic array. By forgetting to free the object itself I had introduced a memory leak.
+1. In the `OBJ_LIST` switch-case of `freeObject`, I was only freeing the dynamic array. By forgetting to free the object itself I had introduced a memory leak.
 
-2. You may have noticed the peculiar `pop` and `push` statements for `OP_BUILD_LIST`. Those are there because `appendList` allocates memory which may kick off a garbage collection. Since `list` isn't rooted anywhere it would get sweeped away. Pushing it onto the stack prevents that.
+2. You may have noticed the peculiar `pop` and `push` statements in the code that handles the opcode `OP_BUILD_LIST`. Those are there because `appendList` allocates memory which may kick off a garbage collection cycle. Since `list` isn't rooted anywhere it would get sweeped away. Pushing it onto the stack prevents that.
 
 ```c++
 push(OBJ_VAL(list)); // So list isn't sweeped by GC in appendToList
@@ -448,11 +425,13 @@ pop();
 
 # Challenges
 
-Congratulations! We've just finished a complete implementation of a performant list data type. This is no small feat. Programming in Clox will certainly be a lot easier now that we can store lists of data. If you are looking for more things to explore beyond what we've gone over in this post then you are in luck. Following in the footsteps of Crafting Interpreters, I've included some challenges below. Thanks for reading!
+Congratulations! We've just finished a complete implementation of a performant list data type. This is no small feat. Lists will certainly make programming in Clox much nicer. I hope that working through this with me will give you the courage to go build some features on your own too. Thanks for reading!
 
-1. More fully featured languages often present a wider variety of ways to access items in a list. This includes negative indexing and slicing. Negative indexing is quite simple; an index of `-1` accesses the last item, `-2` the second last, and so forth. Slicing allows a user to easily extract and operate on portions of a list. In Python something like `myList[2:8:2]` would take every second item of the list starting at index `2` and going to index `8`. Add negative indexing and a native function with the signature `Value slice(start, stop, step)` to Clox.
+If you are looking for more things to explore beyond what we've gone over in this post then you are in luck. Following in the footsteps of Crafting Interpreters, I've included some challenges below.
 
-2. Making `append` and `delete` native functions was the easiest to implement but is uncommon in other languages. Two other options exist. These could be keywords that form a statement e.g. `del foo[0]`. This statement would then be compiled down into some new opcodes. Alternatively, append and delete could be made into methods on a list object. This would require some more rewiring of Clox but would perhaps be more idiomatic. Pick the approach you prefer and try implementing it.
+1. More fully featured languages often present a wider variety of ways to access items in a list. This includes negative indexing and slicing. Negative indexing is quite simple; an index of `-1` accesses the last item, `-2` the second last, and so forth. Slicing allows a user to easily extract and operate on portions of a list. In Python, something like `myList[2:8:2]` would take every second item of the list starting at index `2` and going to index `8` exclusive. Try supporting negative indexing in `OP_INDEX_SUBSCR`. Then try adding a native function with the signature `Value slice(start, stop, step)`.
+
+2. Making `append` and `delete` native functions kept the implementation simple, but is uncommon in other languages. Two other options exist. Append and delete could be keywords that form a statement e.g. `delete foo[0]`. This statement would then be compiled down into some new opcodes. Alternatively, append and delete could be made into methods on a list object. This would require some more rewiring of Clox but would perhaps be more idiomatic. Pick the approach you prefer and try implementing it.
 
 3. Most languages have a unified theory on iterable types. This includes how you work with lists/arrays, iterators, strings, generators and more. Currently, our implementation is pretty lacking in this area. Research on how other languages implement iterators and try adding them to Clox. Additionally, try adding the ability to index individual characters of a Clox string.
 
