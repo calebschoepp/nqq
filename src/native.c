@@ -59,27 +59,38 @@ static bool clockNative(int argCount, Value* args, Value* result, char errMsg[])
 }
 
 static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Delete an item from a list at the given index.
-    // Every item past the deleted item has it's index decreased by 1.
+    // Delete an item from a list or map
     *result = NIL_VAL;
     VALIDATE_ARG_COUNT(delete, 2);
-    if (!IS_LIST(*args)) {
-        sprintf(errMsg, "delete expected the first argument to be a list.");
-        return true;
-    } else if (!IS_NUMBER(*(args + 1))) {
-        sprintf(errMsg, "append expected the second argument to be a number.");
+    if (IS_LIST(*args)) {
+        if (!IS_NUMBER(*(args + 1))) {
+            sprintf(errMsg, "delete expected index to be a number for a list.");
+            return true;
+        }
+        ObjList* list = AS_LIST(*args);
+        int index = AS_NUMBER(*(args + 1));
+
+        if (!isValidListIndex(list, index)) {
+            sprintf(errMsg, "index you are trying to delete is out of range.");
+            return true;
+        }
+
+        deleteFromList(list, index);
+        return false;
+    } else if (IS_MAP(*args)) {
+        if (!isHashable(*(args + 1))) {
+            sprintf(errMsg, "delete expected a hashable key for a map.");
+            return true;
+        }
+        ObjMap* map = AS_MAP(*args);
+        Value key = *(args + 1);
+        tableDelete(&map->items, key);
+        return false;
+    } else {
+        sprintf(errMsg, "delete expected the first argument to be a list or map.");
         return true;
     }
-
-    ObjList* list = AS_LIST(*args);
-    int index = AS_NUMBER(*(args + 1));
-
-    if (!isValidListIndex(list, index)) {
-        sprintf(errMsg, "index you are trying to delete is out of range.");
-        return true;
-    }
-
-    deleteFromList(list, index);
+    // Shouldn't reach here
     return false;
 }
 
