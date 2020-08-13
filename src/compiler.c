@@ -849,6 +849,43 @@ static void list(bool canAssign) {
     return;
 }
 
+// Note that if a map is defined in a position where it could be interpreted as
+// something like an expression statement, then it will be parse as if it were a
+// block. https://stackoverflow.com/questions/8089737/javascript-object-parsing
+static void map(bool canAssign) {
+    int itemCount = 0;
+    if (!check(TOKEN_RIGHT_BRACE)) {
+        do {
+            if (check(TOKEN_RIGHT_BRACE)) {
+                // Trailing comma case
+                break;
+            }
+
+            parsePrecedence(PREC_OR);
+            consume(TOKEN_COLON, "Expect ':' between key and value pair of map.");
+            parsePrecedence(PREC_OR);
+
+            if (itemCount == UINT16_COUNT) {
+                error("Cannot have more than 65536 items in a map display.");
+            }
+            itemCount++;
+        } while (match(TOKEN_COMMA));
+    }
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after map elements.");
+
+    if (itemCount < 256) {
+        emitByte(OP_BUILD_MAP);
+        emitByte(itemCount);
+    } else {
+        emitBytes(OP_WIDE, OP_BUILD_MAP);
+        emitByte((uint8_t)(itemCount >> 8));
+        emitByte((uint8_t)itemCount);
+    }
+
+    return;
+}
+
 static void namedVariable(Token name, bool canAssign) {
 #define SHORT_HAND_ASSIGNER(op) \
     do { \
@@ -943,7 +980,7 @@ ParseRule rules[] = {
     // Prefix          Infix       Precedence
     { grouping,        call,       PREC_CALL },        // TOKEN_LEFT_PAREN
     { NULL,            NULL,       PREC_NONE },        // TOKEN_RIGHT_PAREN
-    { NULL,            NULL,       PREC_NONE },        // TOKEN_LEFT_BRACE
+    { map,             NULL,       PREC_NONE },        // TOKEN_LEFT_BRACE
     { NULL,            NULL,       PREC_NONE },        // TOKEN_RIGHT_BRACE
     { list,            subscript,  PREC_SUBSCRIPT },   // TOKEN_LEFT_BRACKET
     { NULL,            NULL,       PREC_NONE },        // TOKEN_RIGHT_BRACKET
@@ -952,6 +989,7 @@ ParseRule rules[] = {
     { unary,           binary,     PREC_TERM },        // TOKEN_MINUS
     { NULL,            binary,     PREC_TERM },        // TOKEN_PLUS
     { NULL,            NULL,       PREC_NONE },        // TOKEN_SEMICOLON
+    { NULL,            NULL,       PREC_NONE },        // TOKEN_COLON
     { NULL,            binary,     PREC_FACTOR },      // TOKEN_SLASH
     { NULL,            binary,     PREC_FACTOR },      // TOKEN_PERCENT
     { NULL,            binary,     PREC_FACTOR },      // TOKEN_STAR

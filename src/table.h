@@ -25,5 +25,6 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
 void tableRemoveWhite(Table* table);
 void markTable(Table* table);
 uint32_t hashBytes(uint8_t* key, int length);
+bool isHashable(Value value);
 
 #endif

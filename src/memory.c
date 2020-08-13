@@ -95,6 +95,10 @@ static void blackenObject(Obj* object) {
             }
             break;
         }
+        case OBJ_MAP: {
+            // TOOD
+            break;
+        }
         case OBJ_NATIVE:
         case OBJ_STRING:
             break;
@@ -135,6 +139,10 @@ static void freeObject(Obj* object) {
             ObjList* list = (ObjList*)object;
             FREE_ARRAY(Value*, list->items, list->count);
             FREE(ObjList, object);
+            break;
+        }
+        case OBJ_MAP: {
+            // TOOD
             break;
         }
     }

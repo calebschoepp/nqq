@@ -30,6 +30,13 @@ uint32_t hashBytes(uint8_t* key, int length) {
     return hash;
 }
 
+bool isHashable(Value value) {
+    if (IS_CLOSURE(value) || IS_LIST(value) || IS_MAP(value)) {
+        return false;
+    }
+    return true;
+}
+
 static uint32_t hashObject(Obj* obj) {
     // TODO confirm the hashes are fine and there are minimal collisions
     switch (obj->type) {

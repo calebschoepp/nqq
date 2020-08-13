@@ -163,6 +163,12 @@ ObjUpvalue* newUpvalue(Value* slot) {
     return upvalue;
 }
 
+ObjMap* newMap() {
+    ObjMap* map = ALLOCATE_OBJ(ObjMap, OBJ_MAP);
+    initTable(&map->items);
+    return map;
+}
+
 static void printFunction(ObjFunction* function) {
     if (function->name == NULL) {
         printf("<script>");
@@ -181,6 +187,23 @@ static void printList(ObjList* list) {
         printValue(list->items[list->count - 1]);
     }
     printf("]");
+}
+
+static void printMap(ObjMap* map) {
+    bool first = true;
+    printf("{");
+    for (int i = 0; i < map->items.capacity; i++) {
+        if (!map->items.entries[i].empty) {
+            if (!first) {
+                printf(", ");
+            }
+            first = false;
+            printValue(map->items.entries[i].key);
+            printf(": ");
+            printValue(map->items.entries[i].value);
+        }
+    }
+    printf("}");
 }
 
 void printObject(Value value) {
@@ -202,5 +225,9 @@ void printObject(Value value) {
             break;
         case OBJ_LIST:
             printList(AS_LIST(value));
+            break;
+        case OBJ_MAP:
+            printMap(AS_MAP(value));
+            break;
     }
 }

@@ -440,6 +440,38 @@ static InterpretResult run() {
             push(OBJ_VAL(list));
             break;
         }
+        case OP_BUILD_MAP: {
+            // Before: [key1, value1, key2: value2, ..., keyN, valueN] After: [map]
+            ObjMap* map = newMap();
+            uint16_t itemCount;
+            if (vm.nextOpWide == 1) {
+                vm.nextOpWide--;
+                itemCount = READ_SHORT();
+            } else {
+                itemCount = READ_BYTE();
+            }
+
+            push(OBJ_VAL(map)); // So that the map isn't sweeped by GC when table allocates
+            int i = 2 * itemCount;
+            while (i > 0) {
+                Value key = peek(i--);
+                Value value = peek(i--);
+
+                if (!isHashable(key)) {
+                    runtimeError("Map key is not hashable.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                tableSet(&map->items, key, value);
+            }
+            pop();
+
+            while (itemCount-- > 0) {
+                pop();
+                pop();
+            }
+            push(OBJ_VAL(map));
+            break;
+        }
         case OP_INDEX_SUBSCR: {
             // Before: [indexable, index] After: [index(indexable, index)]
             Value index = pop();
@@ -465,6 +497,17 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 result = indexFromString(string, AS_NUMBER(index));
+            } else if (IS_MAP(indexable)) {
+                ObjMap* map = AS_MAP(indexable);
+                if (!isHashable(index)) {
+                    runtimeError("Map key is not hashable.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                bool found = tableGet(&map->items, index, &result);
+                if (!found) {
+                    runtimeError("Key not found in map.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
             } else {
                 runtimeError("Invalid type to index into.");
                 return INTERPRET_RUNTIME_ERROR;
@@ -473,23 +516,32 @@ static InterpretResult run() {
             break;
         }
         case OP_STORE_SUBSCR: {
-            // Before: [list, index, item] After: [item]
+            // Before: [indexable, index, item] After: [item]
             Value item = pop();
             Value index = pop();
-            Value list = pop();
-            if (!IS_LIST(list)) {
-                runtimeError("Cannot store value in a non-list.");
-                return INTERPRET_RUNTIME_ERROR;
-            } else if (!IS_NUMBER(index)) {
-                runtimeError("List index is not a number.");
-                return INTERPRET_RUNTIME_ERROR;
-            } else if (!isValidListIndex(AS_LIST(list), AS_NUMBER(index))) {
-                runtimeError("Invalid list index.");
+            Value indexable = pop();
+            if (IS_LIST(indexable)) {
+                ObjList* list = AS_LIST(indexable);
+                if (!IS_NUMBER(index)) {
+                    runtimeError("List index is not a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                } else if (!isValidListIndex(list, AS_NUMBER(index))) {
+                    runtimeError("List index out of range.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                storeToList(list, AS_NUMBER(index), item);
+            } else if (IS_MAP(indexable)) {
+                ObjMap* map = AS_MAP(indexable);
+                if (!isHashable(index)) {
+                    runtimeError("Map key is not hashable.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                tableSet(&map->items, index, item);
+            } else {
+                runtimeError("Can only store subscript in list or map.");
                 return INTERPRET_RUNTIME_ERROR;
             }
-            storeToList(AS_LIST(list), AS_NUMBER(index), item);
             push(item);
-
             break;
         }
         case OP_RETURN: {
