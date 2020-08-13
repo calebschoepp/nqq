@@ -125,7 +125,7 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
     string->hash = hash;
 
     push(OBJ_VAL(string));
-    tableSet(&vm.strings, string, NIL_VAL);
+    tableSet(&vm.strings, OBJ_VAL(string), NIL_VAL);
     pop();
 
     return string;
