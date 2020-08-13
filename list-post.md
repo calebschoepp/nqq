@@ -1,53 +1,45 @@
-# Adding a list type to an interpreted language
+# Adding lists to the interpreted language Clox
 
-The following post is a detailed walkthrough of how to add a list data type to the interpreted programming language Clox. We'll be going over the entire implementation in detail with lot's of code snippets. Everything from the syntax grammar to garbage collection will be covered.
+Lists are an important data type for any kind of serious programming. The following is a detailed walkthrough of how to add lists to the interpreted programming language Clox. We'll go over the entire design of a list data type including things like there bytecode representation and syntax grammar. There will also be lots of code snippets[^1] goinv over the implementation details.
 
-Clox is the language you write in the fantastic book [Crafting Interpreters]() by [Bob Nystrom](). If you haven't read the book yet, I highly recommend it. This post assumes a high level of familiarty with Clox and Crafting Interpreters but should still be a valuable lesson on programming language design if you haven't read the book.
+Clox is the second of two languages you write in the fantastic book [Crafting Interpreters](https://craftinginterpreters.com/) by [Bob Nystrom](https://journal.stuffwithstuff.com/). If you haven't read the book yet, I highly recommend it. This post assumes a fairly high level of familiarty with Clox and Crafting Interpreters, but it should still be a valuable lesson on programming language design if you haven't read the book.
 
-My hope is that this post will help give you the confidence to keep adding features to Clox. When I finished the Crafting Interpreters I certainly didn't feel qualified to keep working on the language myself. I missed the comfort of Robert's witty writing, delightful drawings, and copious code-snippets. Eventually, I got over that and so can you. If I can add something like lists to Clox then so can you.
+My hope is that this post will help give you the confidence to go and design new features for Clox. When I finished Crafting Interpreters I certainly didn't feel qualified to keep working on the language myself. I missed the comfort of Robert's witty writing, delightful drawings, and copious code-snippets. I'm here to show that if I can add something like lists to Clox then so can you.
 
 # Overview
 
-I'm going to walk through the entire process of adding a list data type to Clox. All the way from the design to the implementation. Code will be presented for most parts of the implementation, but it will not be comprehensive (every line of code required is included) like the code in Crafting Interpreters is.
+When the Clox interpreter runs it starts by lexing source code into a stream of tokens. This stream of tokens can be parsed into an AST which is then compiled into bytecode[^2]. Finally, the bytecode is executed by a VM.
 
-When the Clox interpreter runs it starts by lexing source code into a stream of tokens. This stream of tokens can be parsed into an AST which is then compiled into bytecode[^1]. Finally, the bytecode is executed by a VM producing the desired results of the source code.
+When I'm thinking about adding a new feature to Clox, I tend to work roughly in the opposite direction that the interpreter does. My process looks something like this:
 
-When I'm thinking about adding a new feature to Clox I tend to work roughly in the opposite direction of the interpreter.
+1. Think about what the desired outcome of the feature will be and what the corresponding source code would look like. Or in other words, outline the semantics of the feature.
 
-First, I like to think about what the desired outcome of the feature will be and what the corresponding source code would look like. Another way to phrase this is that I'm outlining the semantics of the new feature.
+2. Design and implement the feature's runtime. The Clox interpreter is nothing but a big C program. Therefore, the feature's semantics need to be cleanly represented in some C code.
 
-Second, I consider what the runtime implementation will look like. Clox is just an interpreter written in C. Therefore, the semantics will eventually need to be cleanly reprsented by some C code.
+3. Determine the necessary opcodes for the feature. In the VM tie the decoding of these opcodes to the runtime I've just built.
 
-Third, is the bytecode it will compile into. The new feature may or may not need some new opcodes to represent the intent of the source code. Sneak peek, adding lists requires new opcodes.
+4. Formalize the grammar of the new feature's syntax. With that in hand write the scanning and parsing code to compile bytecode for the feature.
 
-Fourth, I formalize the grammar for the new features syntax. Once that is locked in I go ahead and write the parser.
+I generally find working in the reverse direction easier. When I start with something like lexing I have hard time understanding how a couple of new lexemes will help me get where I want to go. Flipping the script lets me pretend everything already works and then slowly fill it in. The one disadvantage is that starting at the end often makes testing harder until you have finished.
 
-Finally, I end with what is usually the easiet parse. I add the lexing for any new tokens the feature adds.
-
-It isn't require to work in this direction but I find it much easier. At every step of the process I always have a clear goal for what I need to do. Starting at the end goal helps me avoid situations where I don't have the necessary underlying constructs to achieve a desired result e.g. I don't have the write opcodes to represent what I want to do with lists.
-
-Let's dive in!
-
-Notes
----
-- Actually say I implement the things instead of just design backwards?
-- Maybe just make that middle part a numbered list?
-- Combine lexing and parsing
----
+With this in mind, let's dive in!
 
 # Semantics and Source Code
 
-We should start with the basics. A list literal can be defined like the following:
+Semantics is just a fancy way of saying what we want something to do. We should start with the basics. How do we want the user of Clox to define a list literal.
 
 ```js
-// Directly in an expression
-print [1, 2, 3]; // Expect: [1, 2, 3]
-
 // In an assignment
 let foo = ["a", "b", "c"]
+
+// An empty list
+let bar = [];
+
+// Directly in an expression
+print [1, 2, 3]; // Expect: [1, 2, 3]
 ```
 
-It is common to see the items of large lists defined on multiple lines. In many languages it is idiomatic to add a trailing comma in this case. Our list will support this.
+Commonly you'll see the items of large lists being defined on multiple lines. In many languages it is idiomatic to include a trailing comma. Let's support that.
 
 ```js
 let foo = [
@@ -58,7 +50,7 @@ let foo = [
 ];
 ```
 
-If all we could with lists is define them at compile time then they would be pretty useless. Naturally, we should be able to access items in the list via an integer index. We'd also like to be able to store new values in the list at a specified index.
+If all we could do with lists is define them at compile time then they would be pretty useless. We want to be able to access items in the list. We'd also like to be able to store new values into the list.
 
 ```js
 let foo = [1, 2];
@@ -70,7 +62,7 @@ foo[0] = 2;
 print foo[0]; // Expect: 2
 ```
 
-An important question is how the list will be passed as an argument to a function. We can either pass by value or by reference. We'll choose the latter. This means that a function can modify a list without needing to return a new list to overwrite the original.
+Our list will be pass by reference. This means that functions will receive references to list arguments instead of copies. As a result a function can modify a list without returning it.
 
 ```js
 fun modifyList(list) {
@@ -82,13 +74,23 @@ modifyList(foo);
 print foo; // Expect: [0, 2]
 ```
 
-Up to this point we've defined the semantics of something more like an array. That is, it has a fixed length which is set at compile time, and it contains only asingle type of value. To make this list a bit more "listy", let's start by saying it can store multiple value types.
+Up to this point we've defined the semantics of something more like an array. That is, it has a fixed length set at compile time, and it contains only a single type of value. To make this list a bit more "listy", let's start by saying it can store a mix of any value types.
 
 ```js
-let foo = [1, "b", false, add(1, 2)];
+let foo = [1, "b", false];
 ```
 
-Now let's make the list a bit more dynamic. We'd like to be able to grow the list by adding items to end and by deleting items at specific indexes i.e. append and delete. To keep this post as simple as possible I opted for this functionality to exist as native functions instead of as bytecode operations. More on that later.
+As a convenience, we also want to be able to use expressions when building, indexing, or storing to lists.
+
+```js
+let foo = [1, 1 + 1];
+print foo[add(0, 1)]; // Expect: 2
+
+foo[foo[0]] = 7;
+print foo[3 - 2]; // Expect: 7
+```
+
+Now let's make the list a bit more dynamic. We should be able to append items to the end of the list. Also, there should be a way to delete items at a specific index. In the name of simplicity I opted for this functionality to exist as native functions instead more common alternatives. More on that [later](#challenges).
 
 ```js
 let foo = [1, 2, 3];
@@ -100,7 +102,7 @@ print delete(foo, 2); // Expect: nil
 // delete returns nil because it modifies foo in place. Now foo = [1, 2, 4]
 ```
 
-Great work, users can now grow and shrink there lists as they wish. This concludes the semantics that we will be implementing in this post. A number of valuable list features have been left out for simplicities sake. These include, slicing lists `print foo[1:8];`, reverse indexing `print foo[-1];`, list type conversion (convert a string to a list etc.). For more details on some of these items you can checkout the [challenges](#challenges) section
+Great work, users can now grow and shrink there lists as they wish. This concludes the list semantics that we will be implementing in this post. Again for simplicities sake, a number of common list features have been left out. These include, slicing lists `print foo[1:8];`, reverse indexing `print foo[-1];`, and more. For more details on some of these items you can checkout the [challenges](#challenges) section
 
 # Building a Runtime
 
@@ -456,4 +458,6 @@ Congratulations! We've just finished a complete implementation of a performant l
 
 4. The current implementation of `delete` only removes an item and reshuffles the content in the array as necessary. Hypothetically, if a very large list was deleted from enough then it would have too much memory allocated to it for the number of items it is storing. Try adding some logic to `delete` to deallocate memory when the number of list items becomes small enough.
 
-[^1]: In the Clox implementation parsing and compilation have actually been squeezed into a single step. Despite the fact that they are happening at the same time, they are still providing different functions. Parsing is all about turning a flat stream of tokens into a hiearchal structure that represents the intent of the computation. Compilation is about turning that structure into something that is easier and quicker to execute. By squishing these two steps into one we are essentially skipping building the AST. This has the possible benefits of being conceptually simpler and faster but inhibits static analysis of the code.
+[^1]: Lots of code will be shown but it will not be comprehensive. Not every line of code required for a complete implementation will be provided.
+
+[^2]: In the Clox implementation parsing and compilation have actually been squeezed into a single step. Despite the fact that they are happening at the same time, they are still providing different functions. Parsing is all about turning a flat stream of tokens into a hiearchal structure that represents the intent of the computation. Compilation is about turning that structure into something that is easier and quicker to execute. By squishing these two steps into one we are essentially skipping building the AST. This has the possible benefits of being conceptually simpler and faster but inhibits static analysis of the code.
