@@ -47,9 +47,3 @@
 - [ ] HTTP server
 - [ ] Regex
 - [ ] Testing
-
-# Map syntax
-let foo = {}; // Init empty map
-let bar = {"abc": 1, 2: "def"}; // Init map with multiple types of key/val pairs
-print(foo[1]); // Runtime error
-print(bar[2]); // Output: def
