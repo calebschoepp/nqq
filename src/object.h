@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "chunk.h"
+#include "table.h"
 #include "value.h"
 
 #define OBJ_TYPE(value)         (AS_OBJ(value)->type)
@@ -10,6 +11,7 @@
 #define IS_CLOSURE(value)       isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value)      isObjType(value, OBJ_FUNCTION)
 #define IS_LIST(value)          isObjType(value, OBJ_LIST)
+#define IS_MAP(value)           isObjType(value, OBJ_MAP)
 #define IS_NATIVE(value)        isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value)        isObjType(value, OBJ_STRING)
 
@@ -17,6 +19,7 @@
 #define AS_FUNCTION(value)      ((ObjFunction*)AS_OBJ(value))
 #define AS_LIST(value)          ((ObjList*)AS_OBJ(value))
 #define AS_NATIVE(value)        (((ObjNative*)AS_OBJ(value))->function)
+#define AS_MAP(value)           ((ObjMap*)AS_OBJ(value))
 #define AS_STRING(value)        ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value)       (((ObjString*)AS_OBJ(value))->chars)
 
@@ -24,10 +27,21 @@ typedef enum {
     OBJ_CLOSURE,
     OBJ_FUNCTION,
     OBJ_LIST,
+    OBJ_MAP,
     OBJ_NATIVE,
     OBJ_STRING,
     OBJ_UPVALUE,
 } ObjType;
+
+static const char *OBJ_TYPE_STRINGS[] = {
+    "OBJ_CLOSURE",
+    "OBJ_FUNCTION",
+    "OBJ_LIST",
+    "OBJ_MAP",
+    "OBJ_NATIVE",
+    "OBJ_STRING",
+    "OBJ_UPVALUE"
+    };
 
 // Base type all nqq objects inherit from
 struct sObj {
@@ -51,6 +65,9 @@ typedef struct {
     NativeFn function;
 } ObjNative;
 
+// Note: hash is cached for strings because a) strings are immutable so the hash
+// will never change b) string lookups are a very frequent action in Clox and
+// we want it to be as quick as possible.
 struct sObjString {
     Obj obj;
     int length;
@@ -79,6 +96,11 @@ typedef struct {
     Value* items;
 } ObjList;
 
+typedef struct {
+    Obj obj;
+    Table items;
+} ObjMap;
+
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function);
@@ -93,10 +115,15 @@ void storeToList(ObjList* list, int index, Value value);
 Value indexFromList(ObjList* list, int index);
 void deleteFromList(ObjList* list, int index);
 bool isValidListIndex(ObjList* list, int index);
+ObjMap* newMap();
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {
     return IS_OBJ(value) && AS_OBJ(value)->type == type;
+}
+
+static inline const char* stringFromObjType(ObjType type) {
+    return OBJ_TYPE_STRINGS[type];
 }
 
 #endif

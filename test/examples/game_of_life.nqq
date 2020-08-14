@@ -1,0 +1,137 @@
+let STATE = {
+    'board': [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 1, 1, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ], 
+    'width': 10,
+    'height': 10,
+    'printGens': [0],
+    'serializeGens': [1, 10, 100, 1000]
+};
+
+let SERIALIZED_BOARDS = {};
+
+fun play(N) {
+    // Game loop that runs for N cycles
+    for (let i = 1; i <= N; i += 1) {
+        cycle(i);
+    }
+}
+
+fun cycle(n) {
+    // The nth cycle of the game
+    printBoard(n);
+    storeSerializedBoard(n);
+    updateBoard();
+}
+
+fun printBoard(n) {
+    if (STATE['printGens'] != [] and !has(STATE['printGens'], n)) {
+        // Don't print board if there is printGens filter
+        return;
+    }
+    print('------------');
+    for (let y = 0; y < STATE['height']; y += 1) {
+        write('|');
+        for (let x = 0; x < STATE['width']; x += 1) {
+            if (STATE['board'][y][x] == 1) {
+                write('*');
+            } else {
+                write('.');
+            }
+        }
+        print('|');
+    }
+    print('------------');
+    write('Generation: ');
+    write(n);
+    write('\n');
+}
+
+fun storeSerializedBoard(n) {
+    if (STATE['serializeGens'] != [] and !has(STATE['serializeGens'], n)) {
+        // Don't serialize board if there is serializeGens filter
+        return;
+    }
+    let sBoard = '';
+    for (let y = 0; y < STATE['height']; y += 1) {
+        for (let x = 0; x < STATE['width']; x += 1) {
+            if (STATE['board'][y][x] == 1) {
+                sBoard += '*';
+            } else {
+                sBoard += '.';
+            }
+        }
+    }
+    SERIALIZED_BOARDS[n] = sBoard;
+}
+
+fun updateBoard() {
+    let newBoard = genBoard(STATE['width'], STATE['height']);
+    for (let y = 0; y < STATE['height']; y += 1) {
+        for (let x = 0; x < STATE['width']; x += 1) {
+            let count = getNeighbourCount(x, y, STATE['width'], STATE['height']);
+            if (STATE['board'][y][x] == 1 and (count == 2 or count == 3)) {
+                // Live cell keeps living
+                newBoard[y][x] = 1;
+            } else if (STATE['board'][y][x] == 0 and count == 3) {
+                // Dead cell is reborn
+                newBoard[y][x] = 1;
+            }
+            // Otherwise cell is dead by default
+        }
+    }
+    STATE['board'] = newBoard;
+}
+
+fun getNeighbourCount(x, y, width, height) {
+    let count = 0;
+    for (let yLook = y - 1; yLook <= y + 1; yLook += 1) {
+        for (let xLook = x - 1; xLook <= x + 1; xLook += 1) {
+            if (yLook < 0 or yLook >= height or xLook < 0 or xLook >= width) {
+                continue;
+            }
+            if (yLook == y and xLook == x) {
+                continue;
+            }
+            if (STATE['board'][yLook][xLook] == 1) {
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
+
+fun genBoard(width, height) {
+    let rows = [];
+    for (let y = 0; y < height; y += 1) {
+        let cols = [];
+        for (let x = 0; x < width; x += 1) {
+            append(cols, 0);
+        }
+        append(rows, cols);
+    }
+    return rows;
+}
+
+play(1000);
+
+let serializedItems = items(SERIALIZED_BOARDS);
+
+for (let i = 0; i < len(serializedItems); i += 1) {
+    write(serializedItems[i][0]);
+    write(': ');
+    print(serializedItems[i][1]);
+}
+// expect: 1000: .......*.........*.........*............................................................**........**
+// expect: 1: ............*...***....*.......***..................................................................
+// expect: 10: .......*.........*.........*...............*.*........**........*...................................
+// expect: 100: .......*.........*.........*............................................................**........**

@@ -1,0 +1,1 @@
+keys(); // expect runtime error: keys expected 1 arguments but got 0.

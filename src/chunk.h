@@ -36,6 +36,7 @@ typedef enum {
     OP_CLOSURE,
     OP_CLOSE_UPVALUE,
     OP_BUILD_LIST,
+    OP_BUILD_MAP,
     OP_INDEX_SUBSCR,
     OP_STORE_SUBSCR,
     OP_WIDE,

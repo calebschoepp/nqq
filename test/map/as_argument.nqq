@@ -1,0 +1,28 @@
+fun modifyMap(m) {
+    m[0] = 'modified';
+}
+
+fun growMap(m) {
+    m['new'] = 'new thing';
+}
+
+fun shrinkList(m) {
+    delete(m, 0);
+}
+
+let myMap = {0: 'original', 1: 'thing'};
+let refMap = myMap;
+print(myMap); // expect: {0: 'original', 1: 'thing'}
+print(refMap); // expect: {0: 'original', 1: 'thing'}
+
+modifyMap(myMap);
+print(myMap); // expect: {0: 'modified', 1: 'thing'}
+print(refMap); // expect: {0: 'modified', 1: 'thing'}
+
+growMap(myMap);
+print(myMap); // expect: {0: 'modified', 1: 'thing', 'new': 'new thing'}
+print(refMap); // expect: {0: 'modified', 1: 'thing', 'new': 'new thing'}
+
+shrinkList(myMap);
+print(myMap); // expect: {1: 'thing', 'new': 'new thing'}
+print(refMap); // expect: {1: 'thing', 'new': 'new thing'}

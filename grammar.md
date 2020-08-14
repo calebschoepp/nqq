@@ -51,9 +51,11 @@ function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 assigner       → "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" ;
-literal        → "true" | "false" | "nil"
-               | STRING | NUMBER | "[" listDisplay? "]" ;
-listDisplay    → logic_or ( "," logic_or )* ( "," )? ;
+literal        → "true" | "false" | "nil" | "{" map_display "}"
+               | STRING | NUMBER | "[" list_display? "]" ;
+list_display   → logic_or ( "," logic_or )* ( "," )? ;
+map_display    → key_value_pair ( "," key_value_pair )* ( "," )? ;
+key_value_pair → logic_or ":" logic_or ;
 ```
 
 LEXICAL GRAMMAR

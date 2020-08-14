@@ -1,0 +1,1 @@
+len(); // expect runtime error: len expected 1 arguments but got 0.
