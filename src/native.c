@@ -220,9 +220,19 @@ static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
         ObjList* list = AS_LIST(value);
         *result = NUMBER_VAL(list->count);
         return false;
+    } else if (IS_MAP(value)) {
+        ObjMap* map = AS_MAP(value);
+        int len = 0;
+        for (int i = 0; i < map->items.capacity; i++) {
+            if (!map->items.entries[i].empty) {
+                len++;
+            }
+        }
+        *result = NUMBER_VAL(len);
+        return false;
     } else {
         *result = NIL_VAL;
-        sprintf(errMsg, "len expected a list or string.");
+        sprintf(errMsg, "len expected a list, string, or map.");
         return true;
     }
 }
