@@ -10,8 +10,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/value.o",
    "src/value.c"
@@ -29,8 +30,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/table.o",
    "src/table.c"
@@ -48,8 +50,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/compiler.o",
    "src/compiler.c"
@@ -67,8 +70,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/chunk.o",
    "src/chunk.c"
@@ -86,8 +90,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/memory.o",
    "src/memory.c"
@@ -105,8 +110,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/main.o",
    "src/main.c"
@@ -124,8 +130,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/object.o",
    "src/object.c"
@@ -143,8 +150,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/vm.o",
    "src/vm.c"
@@ -162,8 +170,9 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/debug.o",
    "src/debug.c"
@@ -181,12 +190,33 @@
    "-Werror",
    "-Wno-unused-parameter",
    "-O0",
-   "-DDEBUG",
    "-g",
+   "-D",
+   "DEBUG_",
    "-o",
    "build/debug/nqqd/scanner.o",
    "src/scanner.c"
   ],
   "file": "src/scanner.c"
+ },
+ {
+  "directory": "/home/caleb/batcave/nqq",
+  "arguments": [
+   "gcc",
+   "-c",
+   "-std=c99",
+   "-Wall",
+   "-Wextra",
+   "-Werror",
+   "-Wno-unused-parameter",
+   "-O0",
+   "-g",
+   "-D",
+   "DEBUG_",
+   "-o",
+   "build/debug/nqqd/native.o",
+   "src/native.c"
+  ],
+  "file": "src/native.c"
  }
 ]
