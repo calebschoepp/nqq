@@ -82,8 +82,6 @@ static uint32_t hashValue(Value value) {
         }
     }
     case VAL_NIL: {
-        // TODO this may be the incorrect thing to hash to
-        // TODO add a test case that the map {nil: 1, 2: 3} works fine
         return 2;
     }
     case VAL_NUMBER: {
@@ -130,7 +128,6 @@ static Entry* findEntry(Entry* entries, int capacity, Value key) {
 }
 
 bool tableGet(Table* table, Value key, Value* value) {
-    // TODO check the key is hashable Value
     if (table->count == 0) return false;
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
@@ -166,7 +163,6 @@ static void adjustCapacity(Table* table, int capacity) {
 }
 
 bool tableSet(Table* table, Value key, Value value) {
-    // TODO check the key is hashable Value
     if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacity);
         adjustCapacity(table, capacity);
@@ -183,7 +179,6 @@ bool tableSet(Table* table, Value key, Value value) {
 }
 
 bool tableDelete(Table* table, Value key) {
-    // TODO check the key is hashable Value
     if (table->count == 0) return false;
 
     // Find the entry
