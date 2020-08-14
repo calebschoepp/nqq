@@ -51,6 +51,4 @@
 - [ ] Compression
 - [ ] JSON
 
-1. Add native functions
-2. Example programs
-3. Verify GC
+1. Verify GC
