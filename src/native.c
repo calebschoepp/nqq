@@ -9,10 +9,10 @@
 
 /*
 Standard Library:
-append, assert, clock, delete, input, items, keys, len, num, print, values, write
+append, assert, clock, delete, has, input, items, keys, len, num, print, values, write
 
 Missing:
-bool, string, list, map, set, slice, has
+bool, string, list, map, set, slice
 */
 
 #define VALIDATE_ARG_COUNT(funcName, numArgs) \
@@ -88,6 +88,42 @@ static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]
         return false;
     } else {
         sprintf(errMsg, "delete expected the first argument to be a list or map.");
+        return true;
+    }
+    // Shouldn't reach here
+    return false;
+}
+
+static bool hasNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Determine if a list or map has a particular item
+    *result = BOOL_VAL(false);
+    VALIDATE_ARG_COUNT(has, 2);
+    if (IS_LIST(*args)) {
+        ObjList* list = AS_LIST(*args);
+        Value item = *(args + 1);
+        for (int i = 0; i < list->count; i++) {
+            if (valuesEqual(item, list->items[i])) {
+                *result = BOOL_VAL(true);
+                break;
+            }
+        }
+        return false;
+    } else if (IS_MAP(*args)) {
+        if (!isHashable(*(args + 1))) {
+            sprintf(errMsg, "has expected item to be hashable.");
+            return true;
+        }
+        ObjMap* map = AS_MAP(*args);
+        Value item = *(args + 1);
+        for (int i = 0; i < map->items.capacity; i++) {
+            if (valuesEqual(item, map->items.entries[i].key)) {
+                *result = BOOL_VAL(true);
+                break;
+            }
+        }
+        return false;
+    } else {
+        sprintf(errMsg, "has expected the first argument to be a list or map.");
         return true;
     }
     // Shouldn't reach here
@@ -284,6 +320,7 @@ void defineNatives(VM* vm) {
     defineNative(vm, "assert", assertNative);
     defineNative(vm, "clock", clockNative);
     defineNative(vm, "delete", deleteNative);
+    defineNative(vm, "has", hasNative);
     defineNative(vm, "input", inputNative);
     defineNative(vm, "items", itemsNative);
     defineNative(vm, "keys", keysNative);
