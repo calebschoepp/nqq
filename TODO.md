@@ -4,7 +4,7 @@
 - [x] Short hand assignment operators
 - [ ] Decide on wide semantics
 - [x] Lists
-- [-] Maps
+- [x] Maps
 - [ ] Build a benchmarking framework
 - [ ] Modules
 - [ ] Iterators
