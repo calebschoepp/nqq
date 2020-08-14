@@ -9,10 +9,10 @@
 
 /*
 Standard Library:
-append, assert, clock, delete, input, len, num, print, write
+append, assert, clock, delete, input, items, len, num, print, write
 
 Missing:
-bool, string, list, map, set, slice, items, values, keys
+bool, string, list, map, set, slice, items, values, keys, has
 */
 
 #define VALIDATE_ARG_COUNT(funcName, numArgs) \
@@ -118,6 +118,36 @@ static bool inputNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
+static bool itemsNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return a list of the items in a map where an item is a list of the key and value
+    VALIDATE_ARG_COUNT(items, 1);
+    if (!IS_MAP(*args)) {
+        sprintf(errMsg, "items expected the first argument to be a map.");
+        return true;
+    }
+    ObjMap* map = AS_MAP(*args);
+    ObjList* itemsList = newList();
+    Value itemsValue = OBJ_VAL(itemsList);
+    push(itemsValue);
+
+    for (int i = 0; i < map->items.capacity; i++) {
+        if (map->items.entries[i].empty) {
+            continue;
+        }
+        ObjList* kvPairList = newList();
+        Value kvPairValue = OBJ_VAL(kvPairList);
+        push(kvPairValue);
+        appendToList(kvPairList, map->items.entries[i].key);
+        appendToList(kvPairList, map->items.entries[i].value);
+        appendToList(itemsList, kvPairValue);
+        pop(kvPairValue);
+    }
+
+    pop();
+    *result = itemsValue;
+    return false;
+}
+
 static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Return the length of a string or list
     VALIDATE_ARG_COUNT(len, 1);
@@ -207,6 +237,7 @@ void defineNatives(VM* vm) {
     defineNative(vm, "clock", clockNative);
     defineNative(vm, "delete", deleteNative);
     defineNative(vm, "input", inputNative);
+    defineNative(vm, "items", itemsNative);
     defineNative(vm, "len", lenNative);
     defineNative(vm, "num", numNative);
     defineNative(vm, "print", printNative);
