@@ -47,6 +47,9 @@
 - [ ] HTTP server
 - [ ] Regex
 - [ ] Testing
+- [ ] Hashing
+- [ ] Compression
+- [ ] JSON
 
 1. Add native functions
 2. Example programs

@@ -9,10 +9,10 @@
 
 /*
 Standard Library:
-append, assert, clock, delete, input, items, len, num, print, write
+append, assert, clock, delete, input, items, keys, len, num, print, values, write
 
 Missing:
-bool, string, list, map, set, slice, items, values, keys, has
+bool, string, list, map, set, slice, has
 */
 
 #define VALIDATE_ARG_COUNT(funcName, numArgs) \
@@ -148,6 +148,30 @@ static bool itemsNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
+static bool keysNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return a list of the keys in a map
+    VALIDATE_ARG_COUNT(keys, 1);
+    if (!IS_MAP(*args)) {
+        sprintf(errMsg, "keys expected the first argument to be a map.");
+        return true;
+    }
+    ObjMap* map = AS_MAP(*args);
+    ObjList* keysList = newList();
+    Value keysValue = OBJ_VAL(keysList);
+    push(keysValue);
+
+    for (int i = 0; i < map->items.capacity; i++) {
+        if (map->items.entries[i].empty) {
+            continue;
+        }
+        appendToList(keysList, map->items.entries[i].key);
+    }
+
+    pop();
+    *result = keysValue;
+    return false;
+}
+
 static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Return the length of a string or list
     VALIDATE_ARG_COUNT(len, 1);
@@ -212,6 +236,30 @@ static bool printNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
+static bool valuesNative(int argCount, Value* args, Value* result, char errMsg[]) {
+    // Return a list of the values in a map
+    VALIDATE_ARG_COUNT(values, 1);
+    if (!IS_MAP(*args)) {
+        sprintf(errMsg, "values expected the first argument to be a map.");
+        return true;
+    }
+    ObjMap* map = AS_MAP(*args);
+    ObjList* valuesList = newList();
+    Value valuesValue = OBJ_VAL(valuesList);
+    push(valuesValue);
+
+    for (int i = 0; i < map->items.capacity; i++) {
+        if (map->items.entries[i].empty) {
+            continue;
+        }
+        appendToList(valuesList, map->items.entries[i].value);
+    }
+
+    pop();
+    *result = valuesValue;
+    return false;
+}
+
 static bool writeNative(int argCount, Value* args, Value* result, char errMsg[]) {
     VALIDATE_ARG_COUNT(write, 1);
     if (IS_STRING(*args)) {
@@ -238,9 +286,11 @@ void defineNatives(VM* vm) {
     defineNative(vm, "delete", deleteNative);
     defineNative(vm, "input", inputNative);
     defineNative(vm, "items", itemsNative);
+    defineNative(vm, "keys", keysNative);
     defineNative(vm, "len", lenNative);
     defineNative(vm, "num", numNative);
     defineNative(vm, "print", printNative);
+    defineNative(vm, "values", valuesNative);
     defineNative(vm, "write", writeNative);
 }
 
