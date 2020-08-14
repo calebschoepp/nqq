@@ -33,6 +33,16 @@ typedef enum {
     OBJ_UPVALUE,
 } ObjType;
 
+static const char *OBJ_TYPE_STRINGS[] = {
+    "OBJ_CLOSURE",
+    "OBJ_FUNCTION",
+    "OBJ_LIST",
+    "OBJ_MAP",
+    "OBJ_NATIVE",
+    "OBJ_STRING",
+    "OBJ_UPVALUE"
+    };
+
 // Base type all nqq objects inherit from
 struct sObj {
     ObjType type;
@@ -110,6 +120,10 @@ void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {
     return IS_OBJ(value) && AS_OBJ(value)->type == type;
+}
+
+static inline const char* stringFromObjType(ObjType type) {
+    return OBJ_TYPE_STRINGS[type];
 }
 
 #endif

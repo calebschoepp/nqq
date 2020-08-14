@@ -20,7 +20,7 @@ static Obj* allocateObject(size_t size, ObjType type) {
 
 #ifdef DEBUG_LOG_GC
     // TODO decode type number into type name for allocate and free
-    printf("%p allocate %ld for %d\n", (void*)object, size, type);
+    printf("%p allocate %ld for %s\n", (void*)object, size, stringFromObjType(type));
 #endif
 
     return object;
