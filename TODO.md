@@ -47,3 +47,7 @@
 - [ ] HTTP server
 - [ ] Regex
 - [ ] Testing
+
+1. Add native functions
+2. Example programs
+3. Verify GC

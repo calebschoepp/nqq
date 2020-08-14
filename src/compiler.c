@@ -61,7 +61,6 @@ typedef enum {
     TYPE_SCRIPT
 } FunctionType;
 
-
 // TODO decide on operand/wide semantics
 // Only 256 upvalues but way more locals etc.
 typedef struct Compiler {
