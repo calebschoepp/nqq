@@ -50,5 +50,3 @@
 - [ ] Hashing
 - [ ] Compression
 - [ ] JSON
-
-1. Verify GC
