@@ -118,7 +118,7 @@ static Entry* findEntry(Entry* entries, int capacity, Value key) {
                 // We found a tombstone
                 if (tombstone == NULL) tombstone = entry;
             }
-        } else if (valuesEqual(entry->key, key)) { // TODO is this an issue?
+        } else if (valuesEqual(entry->key, key)) {
             // We found the key
             return entry;
         }
