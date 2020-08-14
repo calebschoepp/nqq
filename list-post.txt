@@ -69,6 +69,7 @@
 
 # Append/Delete/Len/List functions
 
+- The astute reader will notice we haven't used parts of the runtime yet
 - Adding functions to support
 - Should this go in the runtime or bytecode sections?
 
@@ -80,7 +81,7 @@
 
 ## Challenges
 
-1. Add slices
-2. Handle strings like lists too
-3. Explore iterators
-4. Make append and delete methods
+1. Slices and reverse indexing
+2. append and delete as key words, as methods
+3. Iterators and strings, unified theory
+4. Deallocate memory on delete
