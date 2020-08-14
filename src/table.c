@@ -31,7 +31,7 @@ uint32_t hashBytes(uint8_t* key, int length) {
 }
 
 bool isHashable(Value value) {
-    if (IS_CLOSURE(value) || IS_LIST(value) || IS_MAP(value)) {
+    if (IS_LIST(value) || IS_MAP(value)) {
         return false;
     }
     return true;
@@ -41,8 +41,7 @@ static uint32_t hashObject(Obj* obj) {
     // TODO confirm the hashes are fine and there are minimal collisions
     switch (obj->type) {
     case OBJ_CLOSURE: {
-        // Not a 1st class citizen
-        // Shouldn't reach here
+        return (uint32_t)((uint64_t)obj & 0x0000ffff);
         break;
     }
     case OBJ_FUNCTION: {
