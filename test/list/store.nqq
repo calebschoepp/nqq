@@ -19,4 +19,4 @@ let d = [[[1, 1], [2, 2], [3, 3]], [[4, 4], [5, 5], [6, 6]], [[7, 7], [8, 8], [9
 d[2][0][1] = 'a';
 print(d); // expect: [[[1, 1], [2, 2], [3, 3]], [[4, 4], [5, 5], [6, 6]], [[7, 'a'], [8, 8], [9, 9]]]
 
-c[2] = 3; // expect runtime error: List index out of range.
+c[2] = 3; // expect runtime error: Invalid list index.

@@ -3,18 +3,19 @@
 - [x] Continue statement
 - [x] Short hand assignment operators
 - [ ] Decide on wide semantics
-- [x] Lists
-- [-] Maps
+- [ ] Lists
+- [ ] Maps
+- [ ] Sets
+- [ ] Enums
 - [ ] Build a benchmarking framework
-- [ ] Modules
 - [ ] Iterators
 - [ ] Optional parameters
 - [ ] Variable parameters
 - [ ] Error handling (error codes and abort)
-- [ ] Sets
-- [ ] Implicit semi-colons
+- [ ] Modules
 - [ ] Lambdas i.e. anonymous functions
 - [ ] Comprehensions
+- [ ] Implicit semi-colons
 - [ ] Pattern matching
 - [ ] Concurrency primitives in syntax
 - [x] Multi-line comments
@@ -31,7 +32,6 @@
 - [ ] Ternary operator? (Do I even want? A ? X : Y === A and X or Y)
 - [ ] Bitwise operators? (Only bother if project gets serious)
 - [ ] Postfix/prefix increment/decrement (Prefer short hand assignment)
-- [ ] Enums
 
 # Builtins to add
 - [ ] Std I/O
@@ -47,6 +47,9 @@
 - [ ] HTTP server
 - [ ] Regex
 - [ ] Testing
-- [ ] Hashing
-- [ ] Compression
-- [ ] JSON
+
+# Map syntax
+let foo = {}; // Init empty map
+let bar = {"abc": 1, 2: "def"}; // Init map with multiple types of key/val pairs
+print(foo[1]); // Runtime error
+print(bar[2]); // Output: def

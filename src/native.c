@@ -9,10 +9,10 @@
 
 /*
 Standard Library:
-append, assert, clock, delete, has, input, items, keys, len, num, print, values, write
+append, assert, clock, delete, input, len, num, print, write
 
 Missing:
-bool, string, list, map, set, slice
+bool, string, list, map, set, slice, items, values, keys
 */
 
 #define VALIDATE_ARG_COUNT(funcName, numArgs) \
@@ -59,74 +59,27 @@ static bool clockNative(int argCount, Value* args, Value* result, char errMsg[])
 }
 
 static bool deleteNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Delete an item from a list or map
+    // Delete an item from a list at the given index.
+    // Every item past the deleted item has it's index decreased by 1.
     *result = NIL_VAL;
     VALIDATE_ARG_COUNT(delete, 2);
-    if (IS_LIST(*args)) {
-        if (!IS_NUMBER(*(args + 1))) {
-            sprintf(errMsg, "delete expected index to be a number for a list.");
-            return true;
-        }
-        ObjList* list = AS_LIST(*args);
-        int index = AS_NUMBER(*(args + 1));
-
-        if (!isValidListIndex(list, index)) {
-            sprintf(errMsg, "index you are trying to delete is out of range.");
-            return true;
-        }
-
-        deleteFromList(list, index);
-        return false;
-    } else if (IS_MAP(*args)) {
-        if (!isHashable(*(args + 1))) {
-            sprintf(errMsg, "delete expected a hashable key for a map.");
-            return true;
-        }
-        ObjMap* map = AS_MAP(*args);
-        Value key = *(args + 1);
-        tableDelete(&map->items, key);
-        return false;
-    } else {
-        sprintf(errMsg, "delete expected the first argument to be a list or map.");
+    if (!IS_LIST(*args)) {
+        sprintf(errMsg, "delete expected the first argument to be a list.");
+        return true;
+    } else if (!IS_NUMBER(*(args + 1))) {
+        sprintf(errMsg, "append expected the second argument to be a number.");
         return true;
     }
-    // Shouldn't reach here
-    return false;
-}
 
-static bool hasNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Determine if a list or map has a particular item
-    *result = BOOL_VAL(false);
-    VALIDATE_ARG_COUNT(has, 2);
-    if (IS_LIST(*args)) {
-        ObjList* list = AS_LIST(*args);
-        Value item = *(args + 1);
-        for (int i = 0; i < list->count; i++) {
-            if (valuesEqual(item, list->items[i])) {
-                *result = BOOL_VAL(true);
-                break;
-            }
-        }
-        return false;
-    } else if (IS_MAP(*args)) {
-        if (!isHashable(*(args + 1))) {
-            sprintf(errMsg, "has expected item to be hashable.");
-            return true;
-        }
-        ObjMap* map = AS_MAP(*args);
-        Value item = *(args + 1);
-        for (int i = 0; i < map->items.capacity; i++) {
-            if (valuesEqual(item, map->items.entries[i].key)) {
-                *result = BOOL_VAL(true);
-                break;
-            }
-        }
-        return false;
-    } else {
-        sprintf(errMsg, "has expected the first argument to be a list or map.");
+    ObjList* list = AS_LIST(*args);
+    int index = AS_NUMBER(*(args + 1));
+
+    if (!isValidListIndex(list, index)) {
+        sprintf(errMsg, "index you are trying to delete is out of range.");
         return true;
     }
-    // Shouldn't reach here
+
+    deleteFromList(list, index);
     return false;
 }
 
@@ -154,60 +107,6 @@ static bool inputNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
-static bool itemsNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Return a list of the items in a map where an item is a list of the key and value
-    VALIDATE_ARG_COUNT(items, 1);
-    if (!IS_MAP(*args)) {
-        sprintf(errMsg, "items expected the first argument to be a map.");
-        return true;
-    }
-    ObjMap* map = AS_MAP(*args);
-    ObjList* itemsList = newList();
-    Value itemsValue = OBJ_VAL(itemsList);
-    push(itemsValue);
-
-    for (int i = 0; i < map->items.capacity; i++) {
-        if (map->items.entries[i].empty) {
-            continue;
-        }
-        ObjList* kvPairList = newList();
-        Value kvPairValue = OBJ_VAL(kvPairList);
-        push(kvPairValue);
-        appendToList(kvPairList, map->items.entries[i].key);
-        appendToList(kvPairList, map->items.entries[i].value);
-        appendToList(itemsList, kvPairValue);
-        pop(kvPairValue);
-    }
-
-    pop();
-    *result = itemsValue;
-    return false;
-}
-
-static bool keysNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Return a list of the keys in a map
-    VALIDATE_ARG_COUNT(keys, 1);
-    if (!IS_MAP(*args)) {
-        sprintf(errMsg, "keys expected the first argument to be a map.");
-        return true;
-    }
-    ObjMap* map = AS_MAP(*args);
-    ObjList* keysList = newList();
-    Value keysValue = OBJ_VAL(keysList);
-    push(keysValue);
-
-    for (int i = 0; i < map->items.capacity; i++) {
-        if (map->items.entries[i].empty) {
-            continue;
-        }
-        appendToList(keysList, map->items.entries[i].key);
-    }
-
-    pop();
-    *result = keysValue;
-    return false;
-}
-
 static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
     // Return the length of a string or list
     VALIDATE_ARG_COUNT(len, 1);
@@ -220,19 +119,9 @@ static bool lenNative(int argCount, Value* args, Value* result, char errMsg[]) {
         ObjList* list = AS_LIST(value);
         *result = NUMBER_VAL(list->count);
         return false;
-    } else if (IS_MAP(value)) {
-        ObjMap* map = AS_MAP(value);
-        int len = 0;
-        for (int i = 0; i < map->items.capacity; i++) {
-            if (!map->items.entries[i].empty) {
-                len++;
-            }
-        }
-        *result = NUMBER_VAL(len);
-        return false;
     } else {
         *result = NIL_VAL;
-        sprintf(errMsg, "len expected a list, string, or map.");
+        sprintf(errMsg, "len expected a list or string.");
         return true;
     }
 }
@@ -282,30 +171,6 @@ static bool printNative(int argCount, Value* args, Value* result, char errMsg[])
     return false;
 }
 
-static bool valuesNative(int argCount, Value* args, Value* result, char errMsg[]) {
-    // Return a list of the values in a map
-    VALIDATE_ARG_COUNT(values, 1);
-    if (!IS_MAP(*args)) {
-        sprintf(errMsg, "values expected the first argument to be a map.");
-        return true;
-    }
-    ObjMap* map = AS_MAP(*args);
-    ObjList* valuesList = newList();
-    Value valuesValue = OBJ_VAL(valuesList);
-    push(valuesValue);
-
-    for (int i = 0; i < map->items.capacity; i++) {
-        if (map->items.entries[i].empty) {
-            continue;
-        }
-        appendToList(valuesList, map->items.entries[i].value);
-    }
-
-    pop();
-    *result = valuesValue;
-    return false;
-}
-
 static bool writeNative(int argCount, Value* args, Value* result, char errMsg[]) {
     VALIDATE_ARG_COUNT(write, 1);
     if (IS_STRING(*args)) {
@@ -320,7 +185,7 @@ static bool writeNative(int argCount, Value* args, Value* result, char errMsg[])
 static void defineNative(VM* vm, const char* name, NativeFn function) {
     push(OBJ_VAL(copyString(name, (int)strlen(name))));
     push(OBJ_VAL(newNative(function)));
-    tableSet(&vm->globals, vm->stack[0], vm->stack[1]);
+    tableSet(&vm->globals, AS_STRING(vm->stack[0]), vm->stack[1]);
     pop();
     pop();
 }
@@ -330,14 +195,10 @@ void defineNatives(VM* vm) {
     defineNative(vm, "assert", assertNative);
     defineNative(vm, "clock", clockNative);
     defineNative(vm, "delete", deleteNative);
-    defineNative(vm, "has", hasNative);
     defineNative(vm, "input", inputNative);
-    defineNative(vm, "items", itemsNative);
-    defineNative(vm, "keys", keysNative);
     defineNative(vm, "len", lenNative);
     defineNative(vm, "num", numNative);
     defineNative(vm, "print", printNative);
-    defineNative(vm, "values", valuesNative);
     defineNative(vm, "write", writeNative);
 }
 

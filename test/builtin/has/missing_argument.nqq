@@ -1,1 +1,0 @@
-has(); // expect runtime error: has expected 2 arguments but got 0.

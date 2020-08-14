@@ -18,9 +18,10 @@ void* reallocate(void* previous, size_t oldSize, size_t newSize) {
 #ifdef DEBUG_STRESS_GC
         collectGarbage();
 #endif
-        if (vm.bytesAllocated > vm.nextGC) {
-            collectGarbage();
-        }
+
+    if (vm.bytesAllocated > vm.nextGC) {
+        collectGarbage();
+    }
     }
 
     if (newSize == 0) {
@@ -94,11 +95,6 @@ static void blackenObject(Obj* object) {
             }
             break;
         }
-        case OBJ_MAP: {
-            ObjMap* map = (ObjMap*)object;
-            markTable(&map->items);
-            break;
-        }
         case OBJ_NATIVE:
         case OBJ_STRING:
             break;
@@ -107,7 +103,7 @@ static void blackenObject(Obj* object) {
 
 static void freeObject(Obj* object) {
 #ifdef DEBUG_LOG_GC
-    printf("%p free type %s\n", (void*)object, stringFromObjType(object->type));
+    printf("%p free type %d\n", (void*)object, object->type);
 #endif
     switch (object->type) {
         case OBJ_CLOSURE: {
@@ -139,12 +135,6 @@ static void freeObject(Obj* object) {
             ObjList* list = (ObjList*)object;
             FREE_ARRAY(Value*, list->items, list->count);
             FREE(ObjList, object);
-            break;
-        }
-        case OBJ_MAP: {
-            ObjMap* map = (ObjMap*)object;
-            freeTable(&map->items);
-            FREE(ObjMap, object);
             break;
         }
     }

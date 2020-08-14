@@ -1,1 +1,0 @@
-append(); // expect runtime error: append expected 2 arguments but got 0.

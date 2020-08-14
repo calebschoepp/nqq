@@ -1,4 +1,0 @@
-let a = {nil: 3, 2: 1};
-print(a); // expect: {nil: 3, 2: 1}
-print(a[nil]); // expect: 3
-print(a[2]); // expect: 1

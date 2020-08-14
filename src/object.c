@@ -20,7 +20,7 @@ static Obj* allocateObject(size_t size, ObjType type) {
 
 #ifdef DEBUG_LOG_GC
     // TODO decode type number into type name for allocate and free
-    printf("%p allocate %ld for %s\n", (void*)object, size, stringFromObjType(type));
+    printf("%p allocate %ld for %d\n", (void*)object, size, type);
 #endif
 
     return object;
@@ -125,15 +125,26 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
     string->hash = hash;
 
     push(OBJ_VAL(string));
-    tableSet(&vm.strings, OBJ_VAL(string), NIL_VAL);
+    tableSet(&vm.strings, string, NIL_VAL);
     pop();
 
     return string;
 }
 
+static uint32_t hashString(const char* key, int length) {
+    uint32_t hash = 2166136261u;
+
+    for (int i = 0; i < length; i++) {
+        hash ^= key[i];
+        hash *= 16777619;
+    }
+
+    return hash;
+}
+
 // Copy a string to strings table and take ownership of memory
 ObjString* takeString(char* chars, int length) {
-    uint32_t hash = hashBytes((uint8_t*)chars, length);
+    uint32_t hash = hashString(chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
     if (interned != NULL) {
         FREE_ARRAY(char, chars, length + 1);
@@ -144,7 +155,7 @@ ObjString* takeString(char* chars, int length) {
 
 // Copy a string to strings table without taking ownership of memory
 ObjString* copyString(const char* chars, int length) {
-    uint32_t hash = hashBytes((uint8_t*)chars, length);
+    uint32_t hash = hashString(chars, length);
     ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
     if (interned != NULL) return interned;
 
@@ -161,12 +172,6 @@ ObjUpvalue* newUpvalue(Value* slot) {
     upvalue->location = slot;
     upvalue->next = NULL;
     return upvalue;
-}
-
-ObjMap* newMap() {
-    ObjMap* map = ALLOCATE_OBJ(ObjMap, OBJ_MAP);
-    initTable(&map->items);
-    return map;
 }
 
 static void printFunction(ObjFunction* function) {
@@ -189,23 +194,6 @@ static void printList(ObjList* list) {
     printf("]");
 }
 
-static void printMap(ObjMap* map) {
-    bool first = true;
-    printf("{");
-    for (int i = 0; i < map->items.capacity; i++) {
-        if (!map->items.entries[i].empty) {
-            if (!first) {
-                printf(", ");
-            }
-            first = false;
-            printValue(map->items.entries[i].key);
-            printf(": ");
-            printValue(map->items.entries[i].value);
-        }
-    }
-    printf("}");
-}
-
 void printObject(Value value) {
     switch (OBJ_TYPE(value)) {
         case OBJ_CLOSURE:
@@ -225,9 +213,5 @@ void printObject(Value value) {
             break;
         case OBJ_LIST:
             printList(AS_LIST(value));
-            break;
-        case OBJ_MAP:
-            printMap(AS_MAP(value));
-            break;
     }
 }

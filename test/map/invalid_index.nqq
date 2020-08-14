@@ -1,2 +1,0 @@
-let a = {1: 1};
-print(a[[1]]); // expect runtime error: Map key is not hashable.
