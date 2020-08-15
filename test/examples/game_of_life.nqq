@@ -34,15 +34,15 @@ fun cycle(n) {
 }
 
 fun printBoard(n) {
-    if (STATE['printGens'] != [] and !has(STATE['printGens'], n)) {
+    if (STATE.printGens != [] and !has(STATE.printGens, n)) {
         // Don't print board if there is printGens filter
         return;
     }
     print('------------');
-    for (let y = 0; y < STATE['height']; y += 1) {
+    for (let y = 0; y < STATE.height; y += 1) {
         write('|');
-        for (let x = 0; x < STATE['width']; x += 1) {
-            if (STATE['board'][y][x] == 1) {
+        for (let x = 0; x < STATE.width; x += 1) {
+            if (STATE.board[y][x] == 1) {
                 write('*');
             } else {
                 write('.');
@@ -57,14 +57,14 @@ fun printBoard(n) {
 }
 
 fun storeSerializedBoard(n) {
-    if (STATE['serializeGens'] != [] and !has(STATE['serializeGens'], n)) {
+    if (STATE.serializeGens != [] and !has(STATE.serializeGens, n)) {
         // Don't serialize board if there is serializeGens filter
         return;
     }
     let sBoard = '';
-    for (let y = 0; y < STATE['height']; y += 1) {
-        for (let x = 0; x < STATE['width']; x += 1) {
-            if (STATE['board'][y][x] == 1) {
+    for (let y = 0; y < STATE.height; y += 1) {
+        for (let x = 0; x < STATE.width; x += 1) {
+            if (STATE.board[y][x] == 1) {
                 sBoard += '*';
             } else {
                 sBoard += '.';
@@ -75,21 +75,21 @@ fun storeSerializedBoard(n) {
 }
 
 fun updateBoard() {
-    let newBoard = genBoard(STATE['width'], STATE['height']);
-    for (let y = 0; y < STATE['height']; y += 1) {
-        for (let x = 0; x < STATE['width']; x += 1) {
-            let count = getNeighbourCount(x, y, STATE['width'], STATE['height']);
-            if (STATE['board'][y][x] == 1 and (count == 2 or count == 3)) {
+    let newBoard = genBoard(STATE.width, STATE.height);
+    for (let y = 0; y < STATE.height; y += 1) {
+        for (let x = 0; x < STATE.width; x += 1) {
+            let count = getNeighbourCount(x, y, STATE.width, STATE.height);
+            if (STATE.board[y][x] == 1 and (count == 2 or count == 3)) {
                 // Live cell keeps living
                 newBoard[y][x] = 1;
-            } else if (STATE['board'][y][x] == 0 and count == 3) {
+            } else if (STATE.board[y][x] == 0 and count == 3) {
                 // Dead cell is reborn
                 newBoard[y][x] = 1;
             }
             // Otherwise cell is dead by default
         }
     }
-    STATE['board'] = newBoard;
+    STATE.board = newBoard;
 }
 
 fun getNeighbourCount(x, y, width, height) {
@@ -102,7 +102,7 @@ fun getNeighbourCount(x, y, width, height) {
             if (yLook == y and xLook == x) {
                 continue;
             }
-            if (STATE['board'][yLook][xLook] == 1) {
+            if (STATE.board[yLook][xLook] == 1) {
                 count += 1;
             }
         }

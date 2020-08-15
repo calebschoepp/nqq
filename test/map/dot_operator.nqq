@@ -1,0 +1,6 @@
+let foo = {'a': true, 'b1': false, 1: 'b', 'c': {'d': 1}};
+print(foo.a); // expect: true
+print(foo.b1); // expect: false
+print(foo.c.d); // expect: 1
+foo.c.d = 4;
+print(foo.c.d); // expect: 4

@@ -33,7 +33,7 @@ typedef enum {
     PREC_UNARY,       // ! -
     PREC_POWER,       // **
     PREC_CALL,        // ()
-    PREC_SUBSCRIPT,   // []
+    PREC_SUBSCRIPT,   // [] .
     PREC_PRIMARY
 } Precedence;
 
@@ -377,7 +377,18 @@ static void subscript(bool canAssign) {
     } else {
         emitByte(OP_INDEX_SUBSCR);
     }
-    return;
+}
+
+static void dot(bool canAssign) {
+    consume(TOKEN_IDENTIFIER, "Expect identifier after '.'.");
+    emitConstant(OBJ_VAL(copyString(parser.previous.start, parser.previous.length)));
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emitByte(OP_STORE_SUBSCR);
+    } else {
+        emitByte(OP_INDEX_SUBSCR);
+    }
 }
 
 static void literal(bool canAssign) {
@@ -984,7 +995,7 @@ ParseRule rules[] = {
     { list,            subscript,  PREC_SUBSCRIPT },   // TOKEN_LEFT_BRACKET
     { NULL,            NULL,       PREC_NONE },        // TOKEN_RIGHT_BRACKET
     { NULL,            NULL,       PREC_NONE },        // TOKEN_COMMA
-    { NULL,            NULL,       PREC_NONE },        // TOKEN_DOT
+    { NULL,            dot,        PREC_SUBSCRIPT },   // TOKEN_DOT
     { unary,           binary,     PREC_TERM },        // TOKEN_MINUS
     { NULL,            binary,     PREC_TERM },        // TOKEN_PLUS
     { NULL,            NULL,       PREC_NONE },        // TOKEN_SEMICOLON
