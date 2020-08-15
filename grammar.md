@@ -33,6 +33,7 @@ expression     → assignment ;
 
 assignment     → IDENTIFIER assigner assignment
                | IDENTIFIER ( "[" logic_or "]" )+ "=" assignment
+               | IDENTIFIER ( "." IDENTIFIER )+ "=" assignment
                | logic_or ;
 
 logic_or       → logic_and ( "or" logic_and )* ;
@@ -44,7 +45,9 @@ multiplication → unary ( ( "/" | "*" | "%" ) unary )* ;
 unary          → ( "!" | "-" ) unary | power ;
 power          → call ( "**" call )* ;
 call           → subscript ( "(" arguments? ")" )* ;
-subscript      → primary ( "[" logic_or "]" )* ;
+subscript      → primary ( "[" logic_or "]" )+
+               | primary ( "." IDENTIFIER )+
+               | primary ;
 primary        → literal | IDENTIFIER | "(" expression ")" ;
 
 function       → IDENTIFIER "(" parameters? ")" block ;
