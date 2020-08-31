@@ -1,5 +1,5 @@
 ![Build and Test](https://github.com/calebschoepp/nqq/workflows/Build%20and%20Test/badge.svg)
-
+[![Run on Repl.it](https://repl.it/badge/github/calebschoepp/nqq)](https://repl.it/github/calebschoepp/nqq)
 # NQQ
 
 NQQ is my fork of Robert Nystrom's [Clox](https://github.com/munificent/craftinginterpreters/tree/master/c). I started working on it after reading his book [Crafting Interpreters](https://craftinginterpreters.com/).
